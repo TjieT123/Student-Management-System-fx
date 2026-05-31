@@ -36,8 +36,14 @@
             <Label text="评语："/>
             <TextArea fx:id="commentArea" promptText="请输入评语" prefRowCount="4" wrapText="true"/>
 
-            <Button fx:id="submitGradeBtn" text="提交批改"
-                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="aiGradeBtn" text="AI判卷"
+                        style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-size: 14;"/>
+                <Button fx:id="submitGradeBtn" text="提交批改"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"/>
+                <Label fx:id="aiStatusLabel" text="" visible="false" managed="false"
+                       style="-fx-text-fill: #8e44ad; -fx-font-size: 13;"/>
+            </HBox>
         </VBox>
     </ScrollPane>
 </VBox>

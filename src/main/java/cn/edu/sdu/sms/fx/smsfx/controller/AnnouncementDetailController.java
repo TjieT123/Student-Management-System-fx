@@ -24,7 +24,7 @@ public class AnnouncementDetailController extends BaseController {
             Announcement a = ApiClient.getAnnouncementDetail(id);
             announcementTitleLabel.setText(a.getTitle());
             publisherLabel.setText("发布者：" + (a.getPublisherName() != null ? a.getPublisherName() : ""));
-            timeLabel.setText("发布时间：" + (a.getPublishTime() != null ? a.getPublishTime() : ""));
+            timeLabel.setText("发布时间：" + formatDateTime(a.getPublishTime()));
             contentLabel.setText(a.getContent() != null ? a.getContent() : "暂无内容");
         } catch (Exception e) {
             showError("加载公告详情失败: " + e.getMessage());

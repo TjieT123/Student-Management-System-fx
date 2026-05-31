@@ -123,7 +123,7 @@ public class CourseDetailController extends BaseController {
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
         Region spacer = new Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        Label deadlineLabel = new Label("截止: " + (hw.getDeadline() != null ? hw.getDeadline() : ""));
+        Label deadlineLabel = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadlineLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
         Label statusLabel = createStatusLabel(hw.getStatus());
 
@@ -144,7 +144,7 @@ public class CourseDetailController extends BaseController {
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
         Region spacer = new Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        Label deadlineLabel = new Label("截止: " + (hw.getDeadline() != null ? hw.getDeadline() : ""));
+        Label deadlineLabel = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadlineLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
 
         card.getChildren().addAll(titleLabel, spacer, deadlineLabel);

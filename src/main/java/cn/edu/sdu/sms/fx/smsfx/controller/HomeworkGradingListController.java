@@ -67,7 +67,8 @@ public class HomeworkGradingListController extends BaseController {
         card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12; -fx-cursor: hand;");
         card.setOnMouseClicked(e -> {
             NavigationManager.navigateTo("homework-grading-view.fxml",
-                    (HomeworkGradingController controller) -> controller.setSubmitId(hs.getId()));
+                    (HomeworkGradingController controller) ->
+                            controller.setSubmitId(hs.getId(), homeworkId));
         });
 
         Label nameLabel = new Label(hs.getStudentName() != null ? hs.getStudentName() : "未知");
@@ -83,7 +84,7 @@ public class HomeworkGradingListController extends BaseController {
             statusLabel.setText("待批改");
             statusLabel.setStyle("-fx-text-fill: #e67e22; -fx-font-size: 12;");
         }
-        Label timeLabel = new Label(hs.getSubmitTime() != null ? hs.getSubmitTime() : "");
+        Label timeLabel = new Label(formatDateTime(hs.getSubmitTime()));
         timeLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #95a5a6;");
 
         card.getChildren().addAll(nameLabel, spacer, statusLabel, timeLabel);

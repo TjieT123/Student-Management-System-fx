@@ -711,7 +711,9 @@ public class AdminHomeController extends BaseController {
         TableColumn<Announcement, String> publisherCol = new TableColumn<>("发布人");
         publisherCol.setCellValueFactory(new PropertyValueFactory<>("publisherName"));
         TableColumn<Announcement, String> timeCol = new TableColumn<>("发布时间");
-        timeCol.setCellValueFactory(new PropertyValueFactory<>("publishTime"));
+        timeCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        formatDateTime(cellData.getValue().getPublishTime())));
 
         TableColumn<Announcement, Void> actionCol = new TableColumn<>("操作");
         actionCol.setCellFactory(col -> new TableCell<>() {
@@ -802,7 +804,7 @@ public class AdminHomeController extends BaseController {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("公告详情");
             alert.setHeaderText(a.getTitle());
-            alert.setContentText("发布人：" + a.getPublisherName() + "\n时间：" + a.getPublishTime()
+            alert.setContentText("发布人：" + a.getPublisherName() + "\n时间：" + formatDateTime(a.getPublishTime())
                     + "\n\n" + (a.getContent() != null ? a.getContent() : ""));
             alert.showAndWait();
         } catch (Exception e) { showError(e.getMessage()); }

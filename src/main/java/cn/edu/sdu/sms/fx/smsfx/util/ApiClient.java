@@ -460,6 +460,44 @@ public class ApiClient {
         return convertData(dataNode, HomeworkSubmit.class);
     }
 
+    /**
+     * AI 判卷
+     */
+    public static AiGradeResult aiGrade(Integer submitId, String homeworkTitle, String homeworkContent) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("submitId", submitId);
+        body.put("homeworkTitle", homeworkTitle);
+        body.put("homeworkContent", homeworkContent);
+        HttpResponse<String> response = UnirestRequest.postRaw(
+                url("/api/teacher/homework/ai-grade"), body, SessionManager.getToken());
+        if (response == null) {
+            throw new ApiException(500, "网络连接失败（AI判卷耗时较长，请确认后端AI服务已启动且超时设置充足）");
+        }
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.postRaw(
+                        url("/api/teacher/homework/ai-grade"), body, SessionManager.getToken());
+                if (response == null) {
+                    throw new ApiException(500, "网络连接失败");
+                }
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        // 检查非 200 状态码（如 503 AI 服务不可用）
+        if (response.getStatus() != 200) {
+            String bodyPreview = response.getBody();
+            if (bodyPreview != null && bodyPreview.length() > 200) {
+                bodyPreview = bodyPreview.substring(0, 200);
+            }
+            throw new ApiException(response.getStatus(),
+                    "AI判卷服务异常 (HTTP " + response.getStatus() + "): " + bodyPreview);
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, AiGradeResult.class);
+    }
+
     // ==================== 学生作业接口 ====================
 
     /**

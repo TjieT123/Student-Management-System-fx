@@ -140,7 +140,7 @@ public class ListPageController extends BaseController {
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
         Label publisher = new Label(a.getPublisherName() != null ? a.getPublisherName() : "");
         publisher.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
-        Label time = new Label(a.getPublishTime() != null ? a.getPublishTime() : "");
+        Label time = new Label(formatDateTime(a.getPublishTime()));
         time.setStyle("-fx-font-size: 12; -fx-text-fill: #95a5a6;");
         card.getChildren().addAll(titleLabel, spacer, publisher, time);
         return card;
@@ -158,7 +158,7 @@ public class ListPageController extends BaseController {
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
         Region spacer = new Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        Label deadline = new Label("截止: " + (hw.getDeadline() != null ? hw.getDeadline() : ""));
+        Label deadline = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadline.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
         Label status = createStatusLabel(hw.getStatus());
         card.getChildren().addAll(titleLabel, spacer, deadline, status);
@@ -177,7 +177,7 @@ public class ListPageController extends BaseController {
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
         Region spacer = new Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        Label deadline = new Label("截止: " + (hw.getDeadline() != null ? hw.getDeadline() : ""));
+        Label deadline = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadline.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
         card.getChildren().addAll(titleLabel, spacer, deadline);
         return card;

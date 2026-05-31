@@ -32,13 +32,24 @@
                 <HBox spacing="10"><Label text="提交状态：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="statusLabel"/></HBox>
             </VBox>
 
-            <VBox fx:id="previousSubmissionBox" spacing="8" visible="false" managed="false">
-                <Label text="已提交内容：" style="-fx-font-weight: bold;"/>
-                <TextArea fx:id="previousContentArea" editable="false" prefRowCount="8" wrapText="true"/>
-                <HBox spacing="15" visible="false" managed="false" fx:id="gradeBox">
-                    <Label fx:id="scoreLabel" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;"/>
-                    <Label fx:id="commentLabel" style="-fx-text-fill: #555;" wrapText="true"/>
-                </HBox>
+            <!-- 已提交内容展示区 -->
+            <VBox fx:id="previousSubmissionBox" spacing="8" visible="false" managed="false"
+                  style="-fx-background-color: #f8f9fa; -fx-background-radius: 5; -fx-padding: 12;">
+                <Label text="我的提交内容：" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
+                <TextArea fx:id="previousContentArea" editable="false" prefRowCount="6" wrapText="true"/>
+                <Label fx:id="submitTimeLabel" text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 12;"/>
+
+                <!-- 批改结果区（仅已批改时显示） -->
+                <Separator visible="false" managed="false" fx:id="gradeSeparator"/>
+                <VBox fx:id="gradeBox" spacing="5" visible="false" managed="false">
+                    <Label text="批改结果" style="-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: #27ae60;"/>
+                    <HBox spacing="20">
+                        <Label fx:id="scoreLabel" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
+                    </HBox>
+                    <Label text="教师评语：" style="-fx-font-weight: bold; -fx-text-fill: #555;"/>
+                    <Label fx:id="commentLabel" wrapText="true"
+                           style="-fx-text-fill: #555; -fx-background-color: #fff; -fx-background-radius: 3; -fx-padding: 8;"/>
+                </VBox>
             </VBox>
 
             <Label fx:id="deadlinePassedLabel" text="已超过提交截止时间，无法提交"

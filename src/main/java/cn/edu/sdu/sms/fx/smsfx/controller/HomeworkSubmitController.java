@@ -19,7 +19,9 @@ public class HomeworkSubmitController extends BaseController {
     @FXML private Label statusLabel;
     @FXML private VBox previousSubmissionBox;
     @FXML private TextArea previousContentArea;
-    @FXML private HBox gradeBox;
+    @FXML private Label submitTimeLabel;
+    @FXML private Separator gradeSeparator;
+    @FXML private VBox gradeBox;
     @FXML private Label scoreLabel;
     @FXML private Label commentLabel;
     @FXML private Label deadlinePassedLabel;
@@ -63,7 +65,7 @@ public class HomeworkSubmitController extends BaseController {
                 hwTitleLabel.setText(homeworkItem.getTitle());
                 courseLabel.setText(homeworkItem.getCourseName() != null ? homeworkItem.getCourseName() : "");
                 teacherLabel.setText(homeworkItem.getTeacherName() != null ? homeworkItem.getTeacherName() : "");
-                deadlineLabel.setText(homeworkItem.getDeadline() != null ? homeworkItem.getDeadline() : "");
+                deadlineLabel.setText(formatDateTime(homeworkItem.getDeadline()));
                 currentStatus = homeworkItem.getStatus();
                 updateStatusDisplay();
             }
@@ -116,7 +118,7 @@ public class HomeworkSubmitController extends BaseController {
             return;
         }
 
-        // 如果已批改
+        // 如果已批改：显示提交内容+批改结果，隐藏提交区
         if ("GRADED".equals(currentStatus)) {
             submitArea.setVisible(false);
             submitArea.setManaged(false);
@@ -124,14 +126,20 @@ public class HomeworkSubmitController extends BaseController {
             previousSubmissionBox.setManaged(true);
             gradeBox.setVisible(true);
             gradeBox.setManaged(true);
+            gradeSeparator.setVisible(true);
+            gradeSeparator.setManaged(true);
             loadSubmissionDetail();
             return;
         }
 
-        // 如果已提交或迟交
+        // 如果已提交或迟交：显示提交内容（不含批改结果），保留提交区（截止前可重新提交）
         if ("SUBMITTED".equals(currentStatus) || "LATE".equals(currentStatus)) {
             previousSubmissionBox.setVisible(true);
             previousSubmissionBox.setManaged(true);
+            gradeBox.setVisible(false);
+            gradeBox.setManaged(false);
+            gradeSeparator.setVisible(false);
+            gradeSeparator.setManaged(false);
             loadSubmissionDetail();
         }
 
@@ -143,12 +151,8 @@ public class HomeworkSubmitController extends BaseController {
     }
 
     private void loadSubmissionDetail() {
-        // 尝试从提交历史中获取 submission id
-        // 由于 API 限制，我们从 submit list 中找
-        // 简化处理：如果有 previousContent 就显示
         if (homeworkItem != null && homeworkItem.getStatus() != null
                 && !"UNSUBMIT".equals(homeworkItem.getStatus())) {
-            // 从提交列表查找 submission
             try {
                 PageResult<HomeworkSubmit> submits = ApiClient.getSubmitList(homeworkId, 1, 100);
                 if (submits != null && submits.getList() != null) {
@@ -157,16 +161,21 @@ public class HomeworkSubmitController extends BaseController {
                     for (HomeworkSubmit hs : submits.getList()) {
                         if (currentUserSchId != null && currentUserSchId.equals(hs.getSid())) {
                             submissionId = hs.getId();
-                            // 获取详情（含 content、comment、score）
+                            // 获取详情（含 content、comment、score、submitTime）
                             HomeworkSubmit detail = ApiClient.getStudentSubmissionDetail(submissionId);
                             if (detail != null) {
+                                // 提交内容
                                 previousContentArea.setText(detail.getContent() != null ?
-                                        detail.getContent() : "");
+                                        detail.getContent() : "无内容");
+                                // 提交时间
+                                submitTimeLabel.setText("提交时间：" + formatDateTime(detail.getSubmitTime()));
+                                // 批改结果（仅已批改时显示）
                                 if ("GRADED".equals(currentStatus)) {
-                                    scoreLabel.setText("分数: " +
-                                            (detail.getScore() != null ? detail.getScore() : "-"));
-                                    commentLabel.setText("评语: " +
-                                            (detail.getComment() != null ? detail.getComment() : "无"));
+                                    String scoreText = detail.getScore() != null ?
+                                            String.valueOf(detail.getScore()) : "-";
+                                    scoreLabel.setText(scoreText + " 分");
+                                    commentLabel.setText(detail.getComment() != null ?
+                                            detail.getComment() : "无评语");
                                 }
                             }
                             break;

@@ -27,7 +27,7 @@ public class UnirestRequest {
     static {
         Unirest.config()
                 .connectTimeout(5000)   // 连接超时：5秒
-                .socketTimeout(10000);  // 读取超时：10秒
+                .socketTimeout(30000);  // 读取超时：30秒（AI判卷等耗时操作需要更长时间）
     }
 
     // ==================== GET 请求（无参数） ====================

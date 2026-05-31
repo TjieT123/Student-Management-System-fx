@@ -125,6 +125,30 @@ public abstract class BaseController {
         return result.isPresent() && result.get() == ButtonType.OK;
     }
 
+    // ==================== 工具方法 ====================
+
+    /**
+     * 将日期时间字符串从 ISO 格式转换为中文格式
+     * 支持 "YYYY-MM-DDTHH:mm:ss" 和 "YYYY-MM-DD HH:mm:ss" 两种输入
+     * 输出格式: "YYYY年MM月DD日 HH:mm:ss"
+     */
+    protected String formatDateTime(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isEmpty()) return "";
+        try {
+            String normalized = dateTimeStr.replace("T", " ");
+            String[] parts = normalized.split(" ");
+            if (parts.length >= 2) {
+                String[] dateParts = parts[0].split("-");
+                if (dateParts.length == 3) {
+                    return dateParts[0] + "年" + dateParts[1] + "月" + dateParts[2] + "日 " + parts[1];
+                }
+            }
+            return normalized;
+        } catch (Exception e) {
+            return dateTimeStr;
+        }
+    }
+
     /**
      * 将角色英文转为中文
      */

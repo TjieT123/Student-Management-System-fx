@@ -102,7 +102,7 @@ public class StudentHomeController extends BaseController {
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
         Label publisherLabel = new Label(a.getPublisherName() != null ? a.getPublisherName() : "");
         publisherLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
-        Label timeLabel = new Label(a.getPublishTime() != null ? a.getPublishTime() : "");
+        Label timeLabel = new Label(formatDateTime(a.getPublishTime()));
         timeLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #95a5a6;");
 
         card.getChildren().addAll(titleLabel, spacer, publisherLabel, timeLabel);
