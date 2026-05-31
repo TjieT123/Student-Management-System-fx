@@ -160,7 +160,136 @@ public class UnirestRequest {
         }
     }
 
+    // ==================== 带 Token 认证的 GET 请求 ====================
+
+    /**
+     * 发送带 Token 认证的 GET 请求
+     */
+    public static String getWithAuth(String url, String token) {
+        try {
+            HttpResponse<String> response = Unirest.get(url)
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + token)
+                    .asString();
+            return response.getBody();
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 发送带 Token 认证和查询参数的 GET 请求
+     */
+    public static String getWithAuth(String url, Map<String, Object> params, String token) {
+        try {
+            HttpResponse<String> response = Unirest.get(url)
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + token)
+                    .queryString(params)
+                    .asString();
+            return response.getBody();
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // ==================== 带 Token 认证的 POST 请求 ====================
+
+    /**
+     * 发送带 Token 认证的 POST 请求
+     */
+    public static String postWithAuth(String url, Object jsonBody, String token) {
+        try {
+            HttpResponse<String> response = Unirest.post(url)
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + token)
+                    .body(jsonBody)
+                    .asString();
+            return response.getBody();
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // ==================== 返回原始 HttpResponse 的方法（用于状态码检测） ====================
+
+    /**
+     * 发送带 Token 的 GET 请求，返回原始 HttpResponse 用于状态码检测
+     */
+    public static HttpResponse<String> getRaw(String url, Map<String, Object> params, String token) {
+        try {
+            if (token != null && !token.isEmpty()) {
+                return Unirest.get(url)
+                        .header("Accept", "application/json")
+                        .header("Authorization", "Bearer " + token)
+                        .queryString(params)
+                        .asString();
+            } else {
+                return Unirest.get(url)
+                        .header("Accept", "application/json")
+                        .queryString(params)
+                        .asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 发送带 Token 的 POST 请求，返回原始 HttpResponse 用于状态码检测
+     */
+    public static HttpResponse<String> postRaw(String url, Object jsonBody, String token) {
+        try {
+            // 使用 Jackson 手动序列化，避免 Unirest 自动序列化失败
+            String jsonStr = objectMapper.writeValueAsString(jsonBody);
+            if (token != null && !token.isEmpty()) {
+                return Unirest.post(url)
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + token)
+                        .body(jsonStr)
+                        .asString();
+            } else {
+                return Unirest.post(url)
+                        .header("Content-Type", "application/json")
+                        .body(jsonStr)
+                        .asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 发送不带 Body 的带 Token POST 请求（用于 URL 路径参数）
+     */
+    public static HttpResponse<String> postRaw(String url, String token) {
+        try {
+            if (token != null && !token.isEmpty()) {
+                return Unirest.post(url)
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + token)
+                        .asString();
+            } else {
+                return Unirest.post(url)
+                        .header("Content-Type", "application/json")
+                        .asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // ==================== 关闭 Unirest 资源 ====================
+
     /**
      * 关闭 Unirest 客户端，释放线程资源
      * JavaFX 程序退出时调用

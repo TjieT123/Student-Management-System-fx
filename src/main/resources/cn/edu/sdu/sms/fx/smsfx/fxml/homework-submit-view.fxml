@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.HomeworkSubmitController"
+      spacing="0" prefHeight="700.0" prefWidth="1000.0">
+
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
+        <Button fx:id="backButton" text="← 返回" visible="false" managed="false"
+                style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        <Label fx:id="titleLabel" text="学生管理系统"
+               style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="profileButton" text="个人中心"
+                style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+        <VBox spacing="15" style="-fx-padding: 30;">
+
+            <Label fx:id="hwTitleLabel" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <VBox spacing="8" style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 15;">
+                <HBox spacing="10"><Label text="所属课程：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="courseLabel"/></HBox>
+                <HBox spacing="10"><Label text="任课教师：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="teacherLabel"/></HBox>
+                <HBox spacing="10"><Label text="截止时间：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="deadlineLabel"/></HBox>
+                <HBox spacing="10"><Label text="提交状态：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="statusLabel"/></HBox>
+            </VBox>
+
+            <VBox fx:id="previousSubmissionBox" spacing="8" visible="false" managed="false">
+                <Label text="已提交内容：" style="-fx-font-weight: bold;"/>
+                <TextArea fx:id="previousContentArea" editable="false" prefRowCount="8" wrapText="true"/>
+                <HBox spacing="15" visible="false" managed="false" fx:id="gradeBox">
+                    <Label fx:id="scoreLabel" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;"/>
+                    <Label fx:id="commentLabel" style="-fx-text-fill: #555;" wrapText="true"/>
+                </HBox>
+            </VBox>
+
+            <Label fx:id="deadlinePassedLabel" text="已超过提交截止时间，无法提交"
+                   style="-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 14;"
+                   visible="false" managed="false"/>
+
+            <VBox fx:id="submitArea" spacing="10" visible="false" managed="false">
+                <Label text="提交作业内容：" style="-fx-font-weight: bold;"/>
+                <TextArea fx:id="contentArea" promptText="请输入作业内容" prefRowCount="10" wrapText="true"/>
+                <Button fx:id="submitBtn" text="提交作业"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14;"/>
+            </VBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

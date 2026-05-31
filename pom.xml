@@ -75,7 +75,7 @@
                         <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>cn.edu.sdu.sms.fx.smsfx/cn.edu.sdu.sms.fx.smsfx.HelloApplication</mainClass>
+                            <mainClass>cn.edu.sdu.sms.fx.smsfx/cn.edu.sdu.sms.fx.smsfx.SmsApplication</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>

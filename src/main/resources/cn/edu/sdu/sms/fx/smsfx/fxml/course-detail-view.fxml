@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.CourseDetailController"
+      spacing="0" prefHeight="700.0" prefWidth="1000.0">
+
+    <!-- 顶部栏 -->
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
+        <Button fx:id="backButton" text="← 返回" visible="false" managed="false"
+                style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        <Label fx:id="titleLabel" text="学生管理系统"
+               style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="profileButton" text="个人中心"
+                style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+        <VBox spacing="15" style="-fx-padding: 20;">
+
+            <Label fx:id="courseNameLabel" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <VBox spacing="8" style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);">
+                <HBox spacing="10"><Label text="任课教师：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="teacherLabel" text=""/></HBox>
+                <HBox spacing="10"><Label text="授课地点：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="addressLabel" text=""/></HBox>
+                <VBox spacing="5">
+                    <Label text="课程简介：" style="-fx-font-weight: bold;"/>
+                    <Label fx:id="detailLabel" text="" wrapText="true" style="-fx-text-fill: #555;"/>
+                </VBox>
+            </VBox>
+
+            <!-- 选课/取消选课操作（仅学生） -->
+            <Button fx:id="enrollCancelBtn" text="取消选课"
+                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14;"
+                    visible="false" managed="false"/>
+
+            <!-- 发布作业（仅教师） -->
+            <Button fx:id="publishHomeworkBtn" text="发布作业"
+                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"
+                    visible="false" managed="false"/>
+
+            <!-- 作业列表 -->
+            <VBox spacing="10">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="📝 当前作业" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="moreHomeworkBtn" text="查看更多 >"
+                            style="-fx-background-color: transparent; -fx-text-fill: #3498db; -fx-cursor: hand;"/>
+                </HBox>
+                <VBox fx:id="homeworkContainer" spacing="8"/>
+            </VBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

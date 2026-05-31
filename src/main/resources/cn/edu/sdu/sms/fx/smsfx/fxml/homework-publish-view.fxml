@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.HomeworkPublishController"
+      spacing="0" prefHeight="700.0" prefWidth="1000.0">
+
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
+        <Button fx:id="backButton" text="← 返回" visible="false" managed="false"
+                style="-fx-background-color: transparent; -fx-text-fill: white;"/>
+        <Label fx:id="titleLabel" text="学生管理系统"
+               style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="profileButton" text="个人中心"
+                style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+        <VBox spacing="15" style="-fx-padding: 30;" maxWidth="600">
+
+            <Label text="📝 发布作业" style="-fx-font-size: 22; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <Label text="选择课程："/>
+            <ComboBox fx:id="courseCombo" promptText="请选择课程" maxWidth="400"/>
+
+            <Label text="作业标题："/>
+            <TextField fx:id="titleField" promptText="请输入作业标题" maxWidth="400"/>
+
+            <Label text="作业内容："/>
+            <TextArea fx:id="contentArea" promptText="请输入作业内容" prefRowCount="8" maxWidth="400"/>
+
+            <Label text="截止时间："/>
+            <HBox spacing="10">
+                <DatePicker fx:id="deadlineDatePicker"/>
+                <TextField fx:id="deadlineTimeField" promptText="HH:mm:ss" prefWidth="100"/>
+            </HBox>
+
+            <HBox spacing="15">
+                <Button fx:id="publishBtn" text="发布"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"/>
+                <Button fx:id="cancelBtn" text="取消"
+                        style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-size: 14;"/>
+            </HBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

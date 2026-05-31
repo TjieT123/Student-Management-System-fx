@@ -4,11 +4,11 @@ module cn.edu.sdu.sms.fx.smsfx {
 
     requires org.kordamp.bootstrapfx.core;
 
-//    requires kong.unirest;          // Unirest
     requires com.fasterxml.jackson.databind;
-    requires unirest.java;  // JSON解析
+    requires unirest.java;
 
     opens cn.edu.sdu.sms.fx.smsfx to javafx.fxml;
-    opens cn.edu.sdu.sms.fx.smsfx.models to com.fasterxml.jackson.databind;
+    opens cn.edu.sdu.sms.fx.smsfx.controller to javafx.fxml;
+    opens cn.edu.sdu.sms.fx.smsfx.models to com.fasterxml.jackson.databind, javafx.base;
     exports cn.edu.sdu.sms.fx.smsfx;
 }

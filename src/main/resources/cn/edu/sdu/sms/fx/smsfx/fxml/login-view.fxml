@@ -1,16 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
 
-<?import javafx.scene.image.ImageView?>
-<AnchorPane xmlns="http://javafx.com/javafx"
+<AnchorPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.LoginController"
-            prefHeight="400.0" prefWidth="600.0">
-    <Label>there is logo</Label>
+            prefHeight="700.0" prefWidth="1000.0">
 
+    <!-- 登录卡片 - 偏上居中 -->
+    <VBox alignment="TOP_CENTER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox.margin><Insets top="100.0"/></VBox.margin>
+        <VBox alignment="CENTER" maxWidth="400.0" spacing="0.0"
+              style="-fx-background-color: transparent; -fx-padding: 30;">
+
+            <Label text="学生管理系统"
+                   style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: white;">
+                <font><Font name="System Bold" size="28.0"/></font>
+                <VBox.margin><Insets bottom="20.0"/></VBox.margin>
+            </Label>
+
+            <Separator maxWidth="300.0" style="-fx-background-color: rgba(255,255,255,0.4);">
+                <VBox.margin><Insets bottom="20.0"/></VBox.margin>
+            </Separator>
+
+            <Label text="用户登录"
+                   style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: white;">
+                <VBox.margin><Insets bottom="25.0"/></VBox.margin>
+            </Label>
+
+            <TextField fx:id="usernameField" promptText="用户名" maxWidth="300.0"
+                       style="-fx-pref-height: 40; -fx-font-size: 14;">
+                <VBox.margin><Insets bottom="15.0"/></VBox.margin>
+            </TextField>
+
+            <PasswordField fx:id="passwordField" promptText="密码" maxWidth="300.0"
+                           style="-fx-pref-height: 40; -fx-font-size: 14;">
+                <VBox.margin><Insets bottom="25.0"/></VBox.margin>
+            </PasswordField>
+
+            <Button text="登 录" maxWidth="300.0" onAction="#handleLogin"
+                    style="-fx-pref-height: 40; -fx-font-size: 16; -fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 5; -fx-cursor: hand;">
+                <VBox.margin><Insets bottom="20.0"/></VBox.margin>
+            </Button>
+
+            <Button text="注 册" maxWidth="300.0" onAction="#showRegisterDialog"
+                    style="-fx-pref-height: 40; -fx-font-size: 14; -fx-background-color: white; -fx-text-fill: black; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;">
+                <VBox.margin><Insets top="5.0"/></VBox.margin>
+            </Button>
+
+        </VBox>
+    </VBox>
 </AnchorPane>
