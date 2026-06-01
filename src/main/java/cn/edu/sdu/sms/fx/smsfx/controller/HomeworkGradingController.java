@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 public class HomeworkGradingController extends BaseController {
 
     @FXML private Label studentNameLabel;
+    @FXML private Label teacherNameLabel;
     @FXML private Label submitTimeLabel;
     @FXML private Label statusLabel;
     @FXML private TextArea contentDisplay;
@@ -136,6 +137,8 @@ public class HomeworkGradingController extends BaseController {
             currentSubmission = ApiClient.getSubmissionDetail(submitId);
             studentNameLabel.setText(currentSubmission.getStudentName() != null ?
                     currentSubmission.getStudentName() : "未知");
+            teacherNameLabel.setText(currentSubmission.getTeacherName() != null ?
+                    currentSubmission.getTeacherName() : "未知");
             submitTimeLabel.setText(formatDateTime(currentSubmission.getSubmitTime()));
             statusLabel.setText("GRADED".equals(currentSubmission.getStatus()) ? "已批改" : "待批改");
             contentDisplay.setText(currentSubmission.getContent() != null ?

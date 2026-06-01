@@ -161,7 +161,14 @@ public class ListPageController extends BaseController {
         Label deadline = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadline.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
         Label status = createStatusLabel(hw.getStatus());
-        card.getChildren().addAll(titleLabel, spacer, deadline, status);
+        card.getChildren().addAll(titleLabel, spacer, deadline);
+        if ("GRADED".equals(hw.getStatus()) && hw.getScore() != null) {
+            Label scoreLabel = new Label(hw.getScore() + "分");
+            String color = hw.getScore() >= 60 ? "#27ae60" : "#e74c3c";
+            scoreLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 13;");
+            card.getChildren().add(scoreLabel);
+        }
+        card.getChildren().add(status);
         return card;
     }
 

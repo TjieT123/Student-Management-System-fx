@@ -24,7 +24,8 @@
         <VBox spacing="15" style="-fx-padding: 30;">
 
             <Label text="学生信息" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
-            <HBox spacing="10"><Label text="姓名：" style="-fx-min-width: 80;"/><Label fx:id="studentNameLabel"/></HBox>
+            <HBox spacing="10"><Label text="学生姓名：" style="-fx-min-width: 80;"/><Label fx:id="studentNameLabel"/></HBox>
+            <HBox spacing="10"><Label text="任课教师：" style="-fx-min-width: 80;"/><Label fx:id="teacherNameLabel"/></HBox>
             <HBox spacing="10"><Label text="提交时间：" style="-fx-min-width: 80;"/><Label fx:id="submitTimeLabel"/></HBox>
             <HBox spacing="10"><Label text="状态：" style="-fx-min-width: 80;"/><Label fx:id="statusLabel"/></HBox>
 

@@ -43,11 +43,22 @@ public class CourseDetailController extends BaseController {
 
     private void loadCourseDetail() {
         try {
+            // 详情接口获取 courseName/detail/address
             currentCourse = ApiClient.getCourseDetail(courseId);
             courseNameLabel.setText(currentCourse.getCourseName());
-            teacherLabel.setText(currentCourse.getTeacherName() != null ? currentCourse.getTeacherName() : "未知");
             addressLabel.setText(currentCourse.getAddress() != null ? currentCourse.getAddress() : "未知");
             detailLabel.setText(currentCourse.getDetail() != null ? currentCourse.getDetail() : "暂无简介");
+
+            // teacherName 需通过列表接口获取（详情接口不含此字段）
+            String teacherName = "未知";
+            try {
+                PageResult<Course> listResult = ApiClient.getCourseList(1, 1, courseId, null, null);
+                if (listResult != null && listResult.getList() != null && !listResult.getList().isEmpty()) {
+                    Course listCourse = listResult.getList().get(0);
+                    teacherName = listCourse.getTeacherName() != null ? listCourse.getTeacherName() : "未知";
+                }
+            } catch (Exception ignored) {}
+            teacherLabel.setText(teacherName);
 
             String role = SessionManager.getRole();
             if ("STUDENT".equals(role)) {
@@ -127,7 +138,15 @@ public class CourseDetailController extends BaseController {
         deadlineLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
         Label statusLabel = createStatusLabel(hw.getStatus());
 
-        card.getChildren().addAll(titleLabel, spacer, deadlineLabel, statusLabel);
+        card.getChildren().addAll(titleLabel, spacer, deadlineLabel);
+        // 已批改时显示分数（60分及以上绿色，60分以下红色）
+        if ("GRADED".equals(hw.getStatus()) && hw.getScore() != null) {
+            Label scoreLabel = new Label(hw.getScore() + "分");
+            String color = hw.getScore() >= 60 ? "#27ae60" : "#e74c3c";
+            scoreLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 13;");
+            card.getChildren().add(scoreLabel);
+        }
+        card.getChildren().add(statusLabel);
         return card;
     }
 

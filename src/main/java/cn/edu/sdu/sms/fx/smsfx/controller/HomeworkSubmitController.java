@@ -2,6 +2,7 @@ package cn.edu.sdu.sms.fx.smsfx.controller;
 
 import cn.edu.sdu.sms.fx.smsfx.models.*;
 import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
+import cn.edu.sdu.sms.fx.smsfx.util.SessionManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -99,26 +100,20 @@ public class HomeworkSubmitController extends BaseController {
                 break;
         }
 
-        // 判断截止时间
+        // 判断截止时间（兼容 ISO 格式 T 分隔符和空格分隔符）
         boolean deadlinePassed = false;
         if (homeworkItem != null && homeworkItem.getDeadline() != null) {
             try {
+                String normalized = homeworkItem.getDeadline().replace("T", " ");
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                LocalDateTime deadline = LocalDateTime.parse(homeworkItem.getDeadline(), formatter);
+                LocalDateTime deadline = LocalDateTime.parse(normalized, formatter);
                 deadlinePassed = LocalDateTime.now().isAfter(deadline);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                System.err.println("截止时间解析失败: " + homeworkItem.getDeadline());
+            }
         }
 
-        // 如果未提交且截止时间已过
-        if ("UNSUBMIT".equals(currentStatus) && deadlinePassed) {
-            deadlinePassedLabel.setVisible(true);
-            deadlinePassedLabel.setManaged(true);
-            submitArea.setVisible(false);
-            submitArea.setManaged(false);
-            return;
-        }
-
-        // 如果已批改：显示提交内容+批改结果，隐藏提交区
+        // 已批改：显示提交内容+批改结果，隐藏提交区
         if ("GRADED".equals(currentStatus)) {
             submitArea.setVisible(false);
             submitArea.setManaged(false);
@@ -132,7 +127,26 @@ public class HomeworkSubmitController extends BaseController {
             return;
         }
 
-        // 如果已提交或迟交：显示提交内容（不含批改结果），保留提交区（截止前可重新提交）
+        // 截止时间已过 → 不允许提交/修改
+        if (deadlinePassed) {
+            submitArea.setVisible(false);
+            submitArea.setManaged(false);
+            deadlinePassedLabel.setVisible(true);
+            deadlinePassedLabel.setManaged(true);
+            if (!"UNSUBMIT".equals(currentStatus)) {
+                // 已提交/迟交的，仍显示已提交内容
+                previousSubmissionBox.setVisible(true);
+                previousSubmissionBox.setManaged(true);
+                gradeBox.setVisible(false);
+                gradeBox.setManaged(false);
+                gradeSeparator.setVisible(false);
+                gradeSeparator.setManaged(false);
+                loadSubmissionDetail();
+            }
+            return;
+        }
+
+        // 截止前：已提交或迟交 → 显示提交内容 + 提交区（允许覆盖提交）
         if ("SUBMITTED".equals(currentStatus) || "LATE".equals(currentStatus)) {
             previousSubmissionBox.setVisible(true);
             previousSubmissionBox.setManaged(true);
@@ -143,46 +157,40 @@ public class HomeworkSubmitController extends BaseController {
             loadSubmissionDetail();
         }
 
-        // 不是已批改且未过截止时间 → 显示提交区域
-        if (!"GRADED".equals(currentStatus) && !deadlinePassed) {
-            submitArea.setVisible(true);
-            submitArea.setManaged(true);
-        }
+        // 截止前、未批改 → 显示提交区域
+        submitArea.setVisible(true);
+        submitArea.setManaged(true);
     }
 
     private void loadSubmissionDetail() {
         if (homeworkItem != null && homeworkItem.getStatus() != null
                 && !"UNSUBMIT".equals(homeworkItem.getStatus())) {
             try {
-                PageResult<HomeworkSubmit> submits = ApiClient.getSubmitList(homeworkId, 1, 100);
-                if (submits != null && submits.getList() != null) {
-                    String currentUserSchId = cn.edu.sdu.sms.fx.smsfx.util.SessionManager
-                            .getCurrentUser().getSchId();
-                    for (HomeworkSubmit hs : submits.getList()) {
-                        if (currentUserSchId != null && currentUserSchId.equals(hs.getSid())) {
-                            submissionId = hs.getId();
-                            // 获取详情（含 content、comment、score、submitTime）
-                            HomeworkSubmit detail = ApiClient.getStudentSubmissionDetail(submissionId);
-                            if (detail != null) {
-                                // 提交内容
-                                previousContentArea.setText(detail.getContent() != null ?
-                                        detail.getContent() : "无内容");
-                                // 提交时间
-                                submitTimeLabel.setText("提交时间：" + formatDateTime(detail.getSubmitTime()));
-                                // 批改结果（仅已批改时显示）
-                                if ("GRADED".equals(currentStatus)) {
-                                    String scoreText = detail.getScore() != null ?
-                                            String.valueOf(detail.getScore()) : "-";
-                                    scoreLabel.setText(scoreText + " 分");
-                                    commentLabel.setText(detail.getComment() != null ?
-                                            detail.getComment() : "无评语");
-                                }
-                            }
-                            break;
-                        }
+                // 使用学生专用接口获取自己的提交记录
+                HomeworkSubmit detail = ApiClient.getMySubmission(homeworkId);
+                if (detail != null) {
+                    submissionId = detail.getId();
+                    // 提交内容
+                    previousContentArea.setText(detail.getContent() != null ?
+                            detail.getContent() : "无内容");
+                    // 提交时间
+                    submitTimeLabel.setText("提交时间：" + formatDateTime(detail.getSubmitTime()));
+                    // 批改结果（仅已批改时显示）
+                    if ("GRADED".equals(currentStatus)) {
+                        String scoreText = detail.getScore() != null ?
+                                String.valueOf(detail.getScore()) : "-";
+                        scoreLabel.setText(scoreText + " 分");
+                        String color = detail.getScore() != null && detail.getScore() >= 60 ?
+                                "#27ae60" : "#e74c3c";
+                        scoreLabel.setStyle("-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+                        commentLabel.setText(detail.getComment() != null ?
+                                detail.getComment() : "无评语");
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                previousContentArea.setText("加载提交详情失败: " + e.getMessage());
+                System.err.println("加载学生提交详情失败: " + e.getMessage());
+            }
         }
     }
 

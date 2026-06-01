@@ -38,9 +38,19 @@ public class CourseSelectionDetailController extends BaseController {
         try {
             Course c = ApiClient.getCourseDetail(courseId);
             courseNameLabel.setText(c.getCourseName());
-            teacherLabel.setText(c.getTeacherName() != null ? c.getTeacherName() : "未知");
             addressLabel.setText(c.getAddress() != null ? c.getAddress() : "未知");
             detailLabel.setText(c.getDetail() != null ? c.getDetail() : "暂无简介");
+
+            // teacherName 需通过列表接口获取（详情接口不含此字段）
+            String teacherName = "未知";
+            try {
+                PageResult<Course> listResult = ApiClient.getCourseList(1, 1, courseId, null, null);
+                if (listResult != null && listResult.getList() != null && !listResult.getList().isEmpty()) {
+                    teacherName = listResult.getList().get(0).getTeacherName();
+                    if (teacherName == null) teacherName = "未知";
+                }
+            } catch (Exception ignored) {}
+            teacherLabel.setText(teacherName);
         } catch (Exception e) {
             showError("加载课程详情失败: " + e.getMessage());
         }

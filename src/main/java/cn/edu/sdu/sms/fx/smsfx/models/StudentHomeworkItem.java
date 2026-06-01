@@ -13,6 +13,7 @@ public class StudentHomeworkItem {
     private String courseName;
     private String teacherName;
     private String status;  // UNSUBMIT / SUBMITTED / LATE / GRADED
+    private Integer score;   // 分数（仅已批改时返回）
 
     public StudentHomeworkItem() {}
 
@@ -33,4 +34,7 @@ public class StudentHomeworkItem {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
 }

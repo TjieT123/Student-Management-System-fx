@@ -525,6 +525,28 @@ public class ApiClient {
     }
 
     /**
+     * 获取学生自己的作业提交记录
+     */
+    public static HomeworkSubmit getMySubmission(Integer homeworkId) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("homeworkId", homeworkId);
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/student/homework/my-submission"), params, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.getRaw(
+                        url("/api/student/homework/my-submission"), params, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, HomeworkSubmit.class);
+    }
+
+    /**
      * 提交作业
      */
     public static HomeworkSubmit submitHomework(SubmitHomeworkRequest req) {

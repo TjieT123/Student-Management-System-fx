@@ -75,6 +75,20 @@ public class HomeworkPublishController extends BaseController {
 
         String deadline = deadlineDatePicker.getValue().toString() + " " + timeText;
 
+        // 校验截止时间不早于当前时间
+        try {
+            java.time.format.DateTimeFormatter fmt =
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            java.time.LocalDateTime deadlineDt = java.time.LocalDateTime.parse(deadline, fmt);
+            if (deadlineDt.isBefore(java.time.LocalDateTime.now())) {
+                showWarning("截止时间不能早于当前时间");
+                return;
+            }
+        } catch (Exception e) {
+            showWarning("截止时间格式错误，请重新输入");
+            return;
+        }
+
         try {
             PublishHomeworkRequest req = new PublishHomeworkRequest(selectedCourse.getId(), title, content, deadline);
             ApiClient.publishHomework(req);
