@@ -3,6 +3,7 @@ package cn.edu.sdu.sms.fx.smsfx.controller;
 import cn.edu.sdu.sms.fx.smsfx.models.*;
 import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import javafx.collections.FXCollections;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -16,8 +17,6 @@ public class AdminHomeController extends BaseController {
     @FXML private VBox sidebar;
     @FXML private Label sectionTitle;
     @FXML private StackPane contentArea;
-
-    // Sidebar buttons
     @FXML private VBox userMgmtSubmenu;
     @FXML private Button teacherUserListBtn;
     @FXML private Button studentUserListBtn;
@@ -31,8 +30,6 @@ public class AdminHomeController extends BaseController {
     @FXML
     public void initialize() {
         super.initialize();
-
-        // 用户管理菜单展开
         Button userMgmtToggle = new Button("▸ 用户管理");
         userMgmtToggle.setMaxWidth(200);
         userMgmtToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14;");
@@ -43,8 +40,6 @@ public class AdminHomeController extends BaseController {
             userMgmtToggle.setText(visible ? "▾ 用户管理" : "▸ 用户管理");
         });
         sidebar.getChildren().add(2, userMgmtToggle);
-
-        // 侧边栏按钮事件
         teacherUserListBtn.setOnAction(e -> showUserManagement("TEACHER"));
         studentUserListBtn.setOnAction(e -> showUserManagement("STUDENT"));
         adminUserListBtn.setOnAction(e -> showUserManagement("ADMIN"));
@@ -54,12 +49,48 @@ public class AdminHomeController extends BaseController {
         announcementMgmtBtn.setOnAction(e -> showAnnouncementManagement());
     }
 
-    // ==================== 工具方法 ====================
+    // ==================== 搜索栏工具 ====================
+
+    private HBox createSearchBar(String idPrompt, String namePrompt,
+                                  Runnable onSearch, Runnable onReset) {
+        HBox bar = new HBox(10);
+        bar.setPadding(new Insets(5, 0, 5, 0));
+        TextField idField = new TextField();
+        idField.setPromptText(idPrompt);
+        idField.setPrefWidth(130);
+        TextField nameField = new TextField();
+        nameField.setPromptText(namePrompt);
+        nameField.setPrefWidth(160);
+        Button searchBtn = new Button("搜索");
+        searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+        searchBtn.setOnAction(e -> onSearch.run());
+        Button resetBtn = new Button("重置");
+        resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        resetBtn.setOnAction(e -> {
+            idField.clear();
+            nameField.clear();
+            onReset.run();
+        });
+        bar.getChildren().addAll(idField, nameField, searchBtn, resetBtn);
+        bar.setUserData(new TextField[]{idField, nameField});
+        return bar;
+    }
+
+    private String getSearchId(HBox bar) {
+        TextField[] fields = (TextField[]) bar.getUserData();
+        return fields[0].getText().trim();
+    }
+
+    private String getSearchName(HBox bar) {
+        TextField[] fields = (TextField[]) bar.getUserData();
+        return fields[1].getText().trim();
+    }
 
     private HBox createPagination(int page, int total, Runnable prevAction, Runnable nextAction) {
         HBox box = new HBox(15);
         box.setAlignment(javafx.geometry.Pos.CENTER);
         box.setPadding(new Insets(10));
+        box.setUserData("pagination"); // 标记为分页栏，避免与搜索栏混淆
         Button prevBtn = new Button("上一页");
         prevBtn.setOnAction(e -> prevAction.run());
         prevBtn.setDisable(page <= 1);
@@ -70,37 +101,39 @@ public class AdminHomeController extends BaseController {
         return box;
     }
 
-    // ==================== 1. 用户管理（教师/学生/管理员列表） ====================
+    // ==================== 1. 用户管理 ====================
 
     private void showUserManagement(String role) {
         contentArea.getChildren().clear();
-        String title = role.equals("TEACHER") ? "教师用户列表" : role.equals("STUDENT") ? "学生用户列表" : "管理员用户列表";
+        String title = role.equals("TEACHER") ? "教师用户列表" :
+                       role.equals("STUDENT") ? "学生用户列表" : "管理员用户列表";
         sectionTitle.setText(title);
 
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(15));
 
-        // 添加按钮
-        Button addBtn = new Button("添加" + (role.equals("TEACHER") ? "教师" : role.equals("STUDENT") ? "学生" : "管理员") + "用户");
+        Button addBtn = new Button("添加" + (role.equals("TEACHER") ? "教师" :
+                role.equals("STUDENT") ? "学生" : "管理员") + "用户");
         addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
-        addBtn.setOnAction(e -> showAddEditUserDialog(null, role));
 
-        // 表格
+        // 搜索栏和分页变量（需在 lambda 之前声明）
+        HBox searchBar = createSearchBar("学号/工号", "姓名", null, null);
+        searchBar.getChildren().add(addBtn);
+        var pageRef = new int[]{1};
+        var totalRef = new int[]{1};
+
         TableView<AdminUserVO> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<AdminUserVO, Integer> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        TableColumn<AdminUserVO, String> schIdCol = new TableColumn<>("学号/工号");
+        schIdCol.setCellValueFactory(new PropertyValueFactory<>("schId"));
         TableColumn<AdminUserVO, String> usernameCol = new TableColumn<>("用户名");
         usernameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
         TableColumn<AdminUserVO, String> nameCol = new TableColumn<>("姓名");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         TableColumn<AdminUserVO, String> phoneCol = new TableColumn<>("手机号");
         phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
-        TableColumn<AdminUserVO, String> schIdCol = new TableColumn<>("工号/学号");
-        schIdCol.setCellValueFactory(new PropertyValueFactory<>("schId"));
-
-        table.getColumns().addAll(idCol, usernameCol, nameCol, phoneCol, schIdCol);
+        table.getColumns().addAll(schIdCol, usernameCol, nameCol, phoneCol);
 
         if ("STUDENT".equals(role)) {
             TableColumn<AdminUserVO, String> majorCol = new TableColumn<>("专业");
@@ -112,18 +145,18 @@ public class AdminHomeController extends BaseController {
             table.getColumns().addAll(majorCol, genderCol, classCol);
         }
 
-        // 操作列
         TableColumn<AdminUserVO, Void> actionCol = new TableColumn<>("操作");
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button editBtn = new Button("编辑");
             private final Button deleteBtn = new Button("删除");
-            private final HBox box = new HBox(5, editBtn, deleteBtn);
+            private final Button resetPwdBtn = new Button("重置密码");
+            private final HBox box = new HBox(5, editBtn, deleteBtn, resetPwdBtn);
             {
                 editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
                 deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+                resetPwdBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white;");
             }
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) { setGraphic(null); return; }
                 AdminUserVO user = getTableView().getItems().get(getIndex());
@@ -133,10 +166,19 @@ public class AdminHomeController extends BaseController {
                         try {
                             ApiClient.deleteUser(user.getId());
                             showInfo("删除成功");
-                            showUserManagement(role);
-                        } catch (Exception ex) {
-                            showError(ex.getMessage());
-                        }
+                            loadUserPage(role, table, searchBar, pageRef, totalRef);
+                        } catch (Exception ex) { showError(ex.getMessage()); }
+                    }
+                });
+                resetPwdBtn.setOnAction(e -> {
+                    if (showConfirm("重置密码", "确定要将用户 " + user.getUsername() + " 的密码重置为 123456 吗？")) {
+                        try {
+                            Map<String, Object> data = new HashMap<>();
+                            data.put("id", user.getId());
+                            data.put("password", "123456");
+                            ApiClient.updateUser(data);
+                            showInfo("密码已重置为 123456");
+                        } catch (Exception ex) { showError(ex.getMessage()); }
                     }
                 });
                 setGraphic(box);
@@ -144,32 +186,67 @@ public class AdminHomeController extends BaseController {
         });
         table.getColumns().add(actionCol);
 
-        // 分页加载
-        var pageRef = new int[]{1};
-        var totalRef = new int[]{1};
-        Runnable loadData = () -> {
-            try {
-                PageResult<AdminUserVO> result = ApiClient.getAdminUserList(role, pageRef[0], 10);
-                if (result != null) {
-                    table.setItems(FXCollections.observableArrayList(result.getList()));
-                    totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
-                }
-            } catch (Exception e) { showError(e.getMessage()); }
-        };
-        loadData.run();
+        addBtn.setOnAction(e -> showAddEditUserDialog(null, role));
+
+        Runnable loadPage = () -> loadUserPage(role, table, searchBar, pageRef, totalRef);
+
+        // 绑定搜索/重置按钮
+        Button searchBtn = (Button) searchBar.getChildren().get(2);
+        searchBtn.setOnAction(e -> { pageRef[0] = 1; loadPage.run(); });
+        Button resetBtn = (Button) searchBar.getChildren().get(3);
+        resetBtn.setOnAction(e -> {
+            ((TextField)((TextField[])searchBar.getUserData())[0]).clear();
+            ((TextField)((TextField[])searchBar.getUserData())[1]).clear();
+            pageRef[0] = 1; loadPage.run();
+        });
+
+        loadPage.run();
 
         HBox pagination = createPagination(pageRef[0], totalRef[0],
-                () -> { if (pageRef[0] > 1) { pageRef[0]--; loadData.run(); } },
-                () -> { if (pageRef[0] < totalRef[0]) { pageRef[0]++; loadData.run(); } });
+                () -> { if (pageRef[0] > 1) { pageRef[0]--; loadPage.run(); } },
+                () -> { if (pageRef[0] < totalRef[0]) { pageRef[0]++; loadPage.run(); } });
 
-        panel.getChildren().addAll(addBtn, table, pagination);
+        panel.getChildren().addAll(searchBar, table, pagination);
         contentArea.getChildren().add(panel);
+    }
+
+    private void loadUserPage(String role, TableView<AdminUserVO> table, HBox searchBar,
+                               int[] pageRef, int[] totalRef) {
+        try {
+            String schId = getSearchId(searchBar);
+            String name = getSearchName(searchBar);
+            PageResult<AdminUserVO> result = ApiClient.getAdminUserList(role, pageRef[0], 10, schId, name);
+            if (result != null) {
+                table.setItems(FXCollections.observableArrayList(
+                        result.getList() != null ? result.getList() : List.of()));
+                totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                // 更新分页栏
+                updatePaginationLabel(searchBar, pageRef[0], totalRef[0]);
+            }
+        } catch (Exception e) { showError(e.getMessage()); }
+    }
+
+    private void updatePaginationLabel(HBox searchBar, int page, int total) {
+        if (searchBar.getParent() instanceof VBox panel) {
+            for (javafx.scene.Node node : panel.getChildren()) {
+                // 仅处理标记为分页栏的 HBox，避免误匹配搜索栏
+                if (node instanceof HBox pagination
+                        && "pagination".equals(pagination.getUserData())
+                        && pagination.getChildren().size() >= 3) {
+                    Label label = (Label) pagination.getChildren().get(1);
+                    label.setText("第 " + page + "/" + total + " 页");
+                    ((Button) pagination.getChildren().get(0)).setDisable(page <= 1);
+                    ((Button) pagination.getChildren().get(2)).setDisable(page >= total);
+                    break;
+                }
+            }
+        }
     }
 
     private void showAddEditUserDialog(AdminUserVO existingUser, String role) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle(existingUser == null ? "添加用户" : "编辑用户");
-        dialog.setHeaderText(null);
+        dialog.setResizable(true);
 
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
@@ -187,7 +264,26 @@ public class AdminHomeController extends BaseController {
         }
         grid.add(new Label("姓名:"), 0, row); grid.add(nameField, 1, row++);
         grid.add(new Label("手机号:"), 0, row); grid.add(phoneField, 1, row++);
-        grid.add(new Label("工号/学号:"), 0, row); grid.add(schIdField, 1, row++);
+        Label schIdLabel = new Label(
+                role.equals("TEACHER") ? "工号:" : role.equals("STUDENT") ? "学号:" : "工号:");
+        grid.add(schIdLabel, 0, row); grid.add(schIdField, 1, row++);
+
+        // 学生专用字段
+        TextField majorField = new TextField();
+        ComboBox<String> genderCombo = new ComboBox<>();
+        genderCombo.getItems().addAll("男", "女");
+        TextField classField = new TextField();
+        int majorRow = row;
+        grid.add(new Label("专业:"), 0, row); grid.add(majorField, 1, row++);
+        int genderRow = row;
+        grid.add(new Label("性别:"), 0, row); grid.add(genderCombo, 1, row++);
+        int classRow = row;
+        grid.add(new Label("班级:"), 0, row); grid.add(classField, 1, row++);
+
+        boolean isStudent = "STUDENT".equals(role);
+        setRowVisible(grid, majorRow, isStudent);
+        setRowVisible(grid, genderRow, isStudent);
+        setRowVisible(grid, classRow, isStudent);
 
         if (existingUser != null) {
             usernameField.setText(existingUser.getUsername());
@@ -195,6 +291,12 @@ public class AdminHomeController extends BaseController {
             nameField.setText(existingUser.getName());
             phoneField.setText(existingUser.getPhone() != null ? existingUser.getPhone() : "");
             schIdField.setText(existingUser.getSchId() != null ? existingUser.getSchId() : "");
+            schIdField.setDisable(true); // 学号/工号不可修改
+            if (isStudent) {
+                majorField.setText(existingUser.getMajor() != null ? existingUser.getMajor() : "");
+                genderCombo.setValue(existingUser.getGender() != null ? existingUser.getGender() : "男");
+                classField.setText(existingUser.getSClass() != null ? String.valueOf(existingUser.getSClass()) : "");
+            }
         }
 
         dialog.getDialogPane().setContent(grid);
@@ -203,30 +305,45 @@ public class AdminHomeController extends BaseController {
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
                 Map<String, Object> data = new HashMap<>();
-            if (existingUser != null) {
-                data.put("id", existingUser.getId());
-            } else {
-                data.put("username", usernameField.getText().trim());
-                data.put("password", passwordField.getText());
-            }
-            data.put("name", nameField.getText().trim());
-            data.put("phone", phoneField.getText().trim());
-            data.put("sch_id", schIdField.getText().trim());
-            data.put("role", role);
-
-            try {
                 if (existingUser != null) {
-                    ApiClient.updateUser(data);
+                    data.put("id", existingUser.getId());
                 } else {
-                    ApiClient.addUser(data);
+                    data.put("username", usernameField.getText().trim());
+                    data.put("password", passwordField.getText());
                 }
-                showInfo(existingUser != null ? "修改成功" : "添加成功");
-                showUserManagement(role);
-            } catch (Exception e) {
-                showError(e.getMessage());
-            }
+                data.put("name", nameField.getText().trim());
+                data.put("phone", phoneField.getText().trim());
+                data.put("sch_id", schIdField.getText().trim());
+                data.put("role", role);
+
+                if (isStudent) {
+                    data.put("major", majorField.getText().trim());
+                    data.put("gender", genderCombo.getValue());
+                    try { data.put("sClass", Integer.parseInt(classField.getText().trim())); }
+                    catch (NumberFormatException e) { showWarning("班级请输入数字"); return; }
+                }
+
+                try {
+                    if (existingUser != null) {
+                        ApiClient.updateUser(data);
+                    } else {
+                        ApiClient.addUser(data);
+                    }
+                    showInfo(existingUser != null ? "修改成功" : "添加成功");
+                    showUserManagement(role);
+                } catch (Exception e) { showError(e.getMessage()); }
             }
         });
+    }
+
+    private void setRowVisible(GridPane grid, int targetRow, boolean visible) {
+        for (javafx.scene.Node node : grid.getChildren()) {
+            Integer r = GridPane.getRowIndex(node);
+            if (r != null && r == targetRow) {
+                node.setVisible(visible);
+                node.setManaged(visible);
+            }
+        }
     }
 
     // ==================== 2. 教师管理 ====================
@@ -240,6 +357,10 @@ public class AdminHomeController extends BaseController {
 
         Button addBtn = new Button("添加教师");
         addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+
+        HBox searchBar = createSearchBar("工号", "姓名",
+                () -> refreshTeacherTable(), () -> refreshTeacherTable());
+        searchBar.getChildren().add(addBtn);
 
         TableView<Teacher> table = new TableView<>();
         TableColumn<Teacher, String> idCol = new TableColumn<>("工号");
@@ -266,7 +387,7 @@ public class AdminHomeController extends BaseController {
                         try {
                             ApiClient.deleteTeacher(t.getSchId());
                             showInfo("删除成功");
-                            showTeacherManagement();
+                            refreshTeacherTable();
                         } catch (Exception ex) { showError(ex.getMessage()); }
                     }
                 });
@@ -278,17 +399,40 @@ public class AdminHomeController extends BaseController {
 
         addBtn.setOnAction(e -> showTeacherEditDialog(null));
 
-        Runnable loadData = () -> {
+        var pageRef = new int[]{1};
+        var totalRef = new int[]{1};
+
+        Runnable load = () -> {
             try {
-                List<Teacher> teachers = ApiClient.getAllTeachers();
-                table.setItems(FXCollections.observableArrayList(teachers));
+                String sId = getSearchId(searchBar);
+                String sName = getSearchName(searchBar);
+                PageResult<Teacher> result = ApiClient.getAllTeachersPaged(pageRef[0], 10, sId, sName);
+                if (result != null) {
+                    table.setItems(FXCollections.observableArrayList(
+                            result.getList() != null ? result.getList() : List.of()));
+                    totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    updatePaginationLabel(searchBar, pageRef[0], totalRef[0]);
+                }
             } catch (Exception e) { showError(e.getMessage()); }
         };
-        loadData.run();
+        load.run();
 
-        panel.getChildren().addAll(addBtn, table);
+        ((Button) searchBar.getChildren().get(2)).setOnAction(e -> { pageRef[0] = 1; load.run(); });
+        ((Button) searchBar.getChildren().get(3)).setOnAction(e -> {
+            ((TextField)((TextField[])searchBar.getUserData())[0]).clear();
+            ((TextField)((TextField[])searchBar.getUserData())[1]).clear();
+            pageRef[0] = 1; load.run();
+        });
+
+        HBox pagination = createPagination(pageRef[0], totalRef[0],
+                () -> { if (pageRef[0] > 1) { pageRef[0]--; load.run(); } },
+                () -> { if (pageRef[0] < totalRef[0]) { pageRef[0]++; load.run(); } });
+
+        panel.getChildren().addAll(searchBar, table, pagination);
         contentArea.getChildren().add(panel);
     }
+
+    private void refreshTeacherTable() { showTeacherManagement(); }
 
     private void showTeacherEditDialog(Teacher existing) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -299,7 +443,6 @@ public class AdminHomeController extends BaseController {
 
         TextField schIdField = new TextField();
         TextField nameField = new TextField();
-
         grid.add(new Label("工号:"), 0, 0); grid.add(schIdField, 1, 0);
         grid.add(new Label("姓名:"), 0, 1); grid.add(nameField, 1, 1);
 
@@ -321,7 +464,7 @@ public class AdminHomeController extends BaseController {
                         ApiClient.addTeacher(schIdField.getText(), nameField.getText());
                     }
                     showInfo(existing != null ? "修改成功" : "添加成功");
-                    showTeacherManagement();
+                    refreshTeacherTable();
                 } catch (Exception e) { showError(e.getMessage()); }
             }
         });
@@ -338,9 +481,12 @@ public class AdminHomeController extends BaseController {
 
         Button addBtn = new Button("添加学生");
         addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
-
-        Button addStudentUserBtn = new Button("添加学生用户（原子操作）");
+        Button addStudentUserBtn = new Button("添加学生用户");
         addStudentUserBtn.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
+
+        HBox searchBar = createSearchBar("学号", "姓名",
+                () -> refreshStudentTable(), () -> refreshStudentTable());
+        searchBar.getChildren().addAll(addBtn, addStudentUserBtn);
 
         TableView<Student> table = new TableView<>();
         TableColumn<Student, String> sidCol = new TableColumn<>("学号");
@@ -373,7 +519,7 @@ public class AdminHomeController extends BaseController {
                         try {
                             ApiClient.deleteStudent(s.getSid());
                             showInfo("删除成功");
-                            showStudentManagement();
+                            refreshStudentTable();
                         } catch (Exception ex) { showError(ex.getMessage()); }
                     }
                 });
@@ -386,26 +532,39 @@ public class AdminHomeController extends BaseController {
         addBtn.setOnAction(e -> showStudentEditDialog(null));
         addStudentUserBtn.setOnAction(e -> showAddStudentUserDialog());
 
-        var pageRef = new int[]{1};
-        var totalRef = new int[]{1};
-        Runnable loadData = () -> {
+        var stuPageRef = new int[]{1};
+        var stuTotalRef = new int[]{1};
+        Runnable load = () -> {
             try {
-                PageResult<Student> result = ApiClient.getAllStudents(pageRef[0], 10);
+                String sId = getSearchId(searchBar);
+                String sName = getSearchName(searchBar);
+                PageResult<Student> result = ApiClient.getAllStudents(stuPageRef[0], 10, sId, sName);
                 if (result != null) {
-                    table.setItems(FXCollections.observableArrayList(result.getList()));
-                    totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    table.setItems(FXCollections.observableArrayList(
+                            result.getList() != null ? result.getList() : List.of()));
+                    stuTotalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    updatePaginationLabel(searchBar, stuPageRef[0], stuTotalRef[0]);
                 }
             } catch (Exception e) { showError(e.getMessage()); }
         };
-        loadData.run();
 
-        HBox pagination = createPagination(pageRef[0], totalRef[0],
-                () -> { if (pageRef[0] > 1) { pageRef[0]--; loadData.run(); } },
-                () -> { if (pageRef[0] < totalRef[0]) { pageRef[0]++; loadData.run(); } });
+        ((Button) searchBar.getChildren().get(2)).setOnAction(e -> { stuPageRef[0] = 1; load.run(); });
+        ((Button) searchBar.getChildren().get(3)).setOnAction(e -> {
+            ((TextField)((TextField[])searchBar.getUserData())[0]).clear();
+            ((TextField)((TextField[])searchBar.getUserData())[1]).clear();
+            stuPageRef[0] = 1; load.run();
+        });
+        load.run();
 
-        panel.getChildren().addAll(new HBox(10, addBtn, addStudentUserBtn), table, pagination);
+        HBox stuPagination = createPagination(stuPageRef[0], stuTotalRef[0],
+                () -> { if (stuPageRef[0] > 1) { stuPageRef[0]--; load.run(); } },
+                () -> { if (stuPageRef[0] < stuTotalRef[0]) { stuPageRef[0]++; load.run(); } });
+
+        panel.getChildren().addAll(searchBar, table, stuPagination);
         contentArea.getChildren().add(panel);
     }
+
+    private void refreshStudentTable() { showStudentManagement(); }
 
     private void showStudentEditDialog(Student existing) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -456,7 +615,7 @@ public class AdminHomeController extends BaseController {
                         ApiClient.addStudent(data);
                     }
                     showInfo(existing != null ? "修改成功" : "添加成功");
-                    showStudentManagement();
+                    refreshStudentTable();
                 } catch (Exception e) { showError(e.getMessage()); }
             }
         });
@@ -464,7 +623,8 @@ public class AdminHomeController extends BaseController {
 
     private void showAddStudentUserDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("添加学生用户（原子操作）");
+        dialog.setTitle("添加学生用户");
+        dialog.setResizable(true);
 
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
@@ -509,13 +669,13 @@ public class AdminHomeController extends BaseController {
                 try {
                     ApiClient.addStudentUser(data);
                     showInfo("添加成功");
-                    showStudentManagement();
+                    refreshStudentTable();
                 } catch (Exception e) { showError(e.getMessage()); }
             }
         });
     }
 
-    // ==================== 4. 课程管理 ====================
+    // ==================== 4. 课程管理（保持不变） ====================
 
     private void showCourseManagement() {
         contentArea.getChildren().clear();
@@ -524,7 +684,6 @@ public class AdminHomeController extends BaseController {
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(15));
 
-        // 搜索栏
         HBox searchBar = new HBox(10);
         TextField idField = new TextField();
         idField.setPromptText("课程ID");
@@ -539,13 +698,10 @@ public class AdminHomeController extends BaseController {
         Button addBtn = new Button("添加课程");
         addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
 
-        // 教师筛选
         ComboBox<Teacher> teacherFilter = new ComboBox<>();
         teacherFilter.setPromptText("按教师筛选");
-        try {
-            List<Teacher> teachers = ApiClient.getAllTeachers();
-            teacherFilter.getItems().addAll(teachers);
-        } catch (Exception ignored) {}
+        try { teacherFilter.getItems().addAll(ApiClient.getAllTeachers(null, null)); }
+        catch (Exception ignored) {}
 
         searchBar.getChildren().addAll(idField, nameField, searchBtn, resetBtn, teacherFilter, addBtn);
 
@@ -592,16 +748,15 @@ public class AdminHomeController extends BaseController {
         var totalRef = new int[]{1};
         Runnable loadData = () -> {
             try {
-                Integer searchId = idField.getText().trim().isEmpty() ? null :
-                        Integer.parseInt(idField.getText().trim());
-                String searchName = nameField.getText().trim().isEmpty() ? null :
-                        nameField.getText().trim();
+                Integer searchId = idField.getText().trim().isEmpty() ? null : Integer.parseInt(idField.getText().trim());
+                String searchName = nameField.getText().trim().isEmpty() ? null : nameField.getText().trim();
                 String tid = teacherFilter.getValue() != null ? teacherFilter.getValue().getSchId() : null;
 
                 PageResult<Course> result = ApiClient.getCourseList(pageRef[0], 10, searchId, searchName, tid);
                 if (result != null) {
                     table.setItems(FXCollections.observableArrayList(result.getList()));
                     totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    updatePaginationLabel(searchBar, pageRef[0], totalRef[0]);
                 }
             } catch (Exception e) { showError(e.getMessage()); }
         };
@@ -610,7 +765,6 @@ public class AdminHomeController extends BaseController {
         resetBtn.setOnAction(e -> { idField.clear(); nameField.clear(); teacherFilter.setValue(null); pageRef[0] = 1; loadData.run(); });
         addBtn.setOnAction(e -> showCourseEditDialog(null));
         teacherFilter.setOnAction(e -> { pageRef[0] = 1; loadData.run(); });
-
         loadData.run();
 
         HBox pagination = createPagination(pageRef[0], totalRef[0],
@@ -634,9 +788,8 @@ public class AdminHomeController extends BaseController {
         detailField.setPrefRowCount(3);
         TextField addressField = new TextField();
         ComboBox<Teacher> teacherCombo = new ComboBox<>();
-        try {
-            teacherCombo.getItems().addAll(ApiClient.getAllTeachers());
-        } catch (Exception ignored) {}
+        try { teacherCombo.getItems().addAll(ApiClient.getAllTeachers(null, null)); }
+        catch (Exception ignored) {}
 
         if (existing != null) {
             courseIdField.setText(String.valueOf(existing.getId()));
@@ -646,9 +799,7 @@ public class AdminHomeController extends BaseController {
             addressField.setText(existing.getAddress());
             if (existing.getTeacherId() != null) {
                 for (Teacher t : teacherCombo.getItems()) {
-                    if (existing.getTeacherId().equals(t.getSchId())) {
-                        teacherCombo.setValue(t); break;
-                    }
+                    if (existing.getTeacherId().equals(t.getSchId())) { teacherCombo.setValue(t); break; }
                 }
             }
         }
@@ -674,9 +825,7 @@ public class AdminHomeController extends BaseController {
                 data.put("courseName", nameField.getText().trim());
                 data.put("detail", detailField.getText().trim());
                 data.put("address", addressField.getText().trim());
-                if (teacherCombo.getValue() != null) {
-                    data.put("teacherId", teacherCombo.getValue().getSchId());
-                }
+                if (teacherCombo.getValue() != null) data.put("teacherId", teacherCombo.getValue().getSchId());
 
                 try {
                     if (existing != null) {
@@ -702,6 +851,10 @@ public class AdminHomeController extends BaseController {
 
         Button publishBtn = new Button("发布公告");
         publishBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+
+        HBox searchBar = createSearchBar("公告ID", "标题",
+                () -> refreshAnnouncementTable(), () -> refreshAnnouncementTable());
+        searchBar.getChildren().add(publishBtn);
 
         TableView<Announcement> table = new TableView<>();
         TableColumn<Announcement, Integer> idCol = new TableColumn<>("ID");
@@ -734,7 +887,7 @@ public class AdminHomeController extends BaseController {
                         try {
                             ApiClient.deleteAnnouncement(a.getId());
                             showInfo("删除成功");
-                            showAnnouncementManagement();
+                            refreshAnnouncementTable();
                         } catch (Exception ex) { showError(ex.getMessage()); }
                     }
                 });
@@ -746,26 +899,40 @@ public class AdminHomeController extends BaseController {
 
         publishBtn.setOnAction(e -> showPublishAnnouncementDialog());
 
-        var pageRef = new int[]{1};
-        var totalRef = new int[]{1};
-        Runnable loadData = () -> {
+        var annPageRef = new int[]{1};
+        var annTotalRef = new int[]{1};
+        Runnable load = () -> {
             try {
-                PageResult<Announcement> result = ApiClient.getAnnouncementList(pageRef[0], 10);
+                String sId = getSearchId(searchBar);
+                String sTitle = getSearchName(searchBar);
+                PageResult<Announcement> result = ApiClient.getAnnouncementList(
+                        annPageRef[0], 10, sId, sTitle);
                 if (result != null) {
-                    table.setItems(FXCollections.observableArrayList(result.getList()));
-                    totalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    table.setItems(FXCollections.observableArrayList(
+                            result.getList() != null ? result.getList() : List.of()));
+                    annTotalRef[0] = Math.max(1, (int) Math.ceil((double) result.getTotal() / 10));
+                    updatePaginationLabel(searchBar, annPageRef[0], annTotalRef[0]);
                 }
             } catch (Exception e) { showError(e.getMessage()); }
         };
-        loadData.run();
 
-        HBox pagination = createPagination(pageRef[0], totalRef[0],
-                () -> { if (pageRef[0] > 1) { pageRef[0]--; loadData.run(); } },
-                () -> { if (pageRef[0] < totalRef[0]) { pageRef[0]++; loadData.run(); } });
+        ((Button) searchBar.getChildren().get(2)).setOnAction(e -> { annPageRef[0] = 1; load.run(); });
+        ((Button) searchBar.getChildren().get(3)).setOnAction(e -> {
+            ((TextField)((TextField[])searchBar.getUserData())[0]).clear();
+            ((TextField)((TextField[])searchBar.getUserData())[1]).clear();
+            annPageRef[0] = 1; load.run();
+        });
+        load.run();
 
-        panel.getChildren().addAll(publishBtn, table, pagination);
+        HBox annPagination = createPagination(annPageRef[0], annTotalRef[0],
+                () -> { if (annPageRef[0] > 1) { annPageRef[0]--; load.run(); } },
+                () -> { if (annPageRef[0] < annTotalRef[0]) { annPageRef[0]++; load.run(); } });
+
+        panel.getChildren().addAll(searchBar, table, annPagination);
         contentArea.getChildren().add(panel);
     }
+
+    private void refreshAnnouncementTable() { showAnnouncementManagement(); }
 
     private void showPublishAnnouncementDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -792,7 +959,7 @@ public class AdminHomeController extends BaseController {
                     ApiClient.publishAnnouncement(titleField.getText(), contentField.getText(),
                             publisherNameField.getText());
                     showInfo("发布成功");
-                    showAnnouncementManagement();
+                    refreshAnnouncementTable();
                 } catch (Exception e) { showError(e.getMessage()); }
             }
         });

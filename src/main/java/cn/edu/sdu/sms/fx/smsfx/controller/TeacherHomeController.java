@@ -67,7 +67,7 @@ public class TeacherHomeController extends BaseController {
     private void loadAnnouncements() {
         announcementContainer.getChildren().clear();
         try {
-            PageResult<Announcement> result = ApiClient.getAnnouncementList(1, 2);
+            PageResult<Announcement> result = ApiClient.getAnnouncementList(1, 2, null, null);
             if (result != null && result.getList() != null) {
                 for (Announcement a : result.getList()) {
                     HBox card = createAnnouncementCard(a);

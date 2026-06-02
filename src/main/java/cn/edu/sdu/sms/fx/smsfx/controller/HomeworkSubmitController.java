@@ -18,6 +18,7 @@ public class HomeworkSubmitController extends BaseController {
     @FXML private Label teacherLabel;
     @FXML private Label deadlineLabel;
     @FXML private Label statusLabel;
+    @FXML private TextArea homeworkContentArea;
     @FXML private VBox previousSubmissionBox;
     @FXML private TextArea previousContentArea;
     @FXML private Label submitTimeLabel;
@@ -31,7 +32,6 @@ public class HomeworkSubmitController extends BaseController {
     @FXML private Button submitBtn;
 
     private Integer homeworkId;
-    private Integer courseId;
     private StudentHomeworkItem homeworkItem;
     private String currentStatus;
     private Integer submissionId;
@@ -45,28 +45,22 @@ public class HomeworkSubmitController extends BaseController {
 
     public void setHomeworkId(Integer homeworkId, Integer courseId) {
         this.homeworkId = homeworkId;
-        this.courseId = courseId;
         loadHomeworkInfo();
     }
 
     private void loadHomeworkInfo() {
         try {
-            // 从学生作业列表接口获取作业信息
-            PageResult<StudentHomeworkItem> result = ApiClient.getStudentHomeworkList(courseId, 1, 20);
-            if (result != null && result.getList() != null) {
-                for (StudentHomeworkItem hw : result.getList()) {
-                    if (homeworkId.equals(hw.getId())) {
-                        homeworkItem = hw;
-                        break;
-                    }
-                }
-            }
+            // 使用新接口直接获取作业内容+状态
+            homeworkItem = ApiClient.getHomeworkContent(homeworkId);
 
             if (homeworkItem != null) {
                 hwTitleLabel.setText(homeworkItem.getTitle());
                 courseLabel.setText(homeworkItem.getCourseName() != null ? homeworkItem.getCourseName() : "");
                 teacherLabel.setText(homeworkItem.getTeacherName() != null ? homeworkItem.getTeacherName() : "");
                 deadlineLabel.setText(formatDateTime(homeworkItem.getDeadline()));
+                homeworkContentArea.setText(homeworkItem.getContent() != null
+                        && !homeworkItem.getContent().isEmpty()
+                        ? homeworkItem.getContent() : "暂无作业内容描述");
                 currentStatus = homeworkItem.getStatus();
                 updateStatusDisplay();
             }

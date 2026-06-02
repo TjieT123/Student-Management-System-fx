@@ -65,7 +65,7 @@ public class ListPageController extends BaseController {
         try {
             if (pageType == PageType.ANNOUNCEMENT) {
                 pageTitleLabel.setText("📢 公告");
-                PageResult<Announcement> result = ApiClient.getAnnouncementList(currentPage, 10);
+                PageResult<Announcement> result = ApiClient.getAnnouncementList(currentPage, 10, null, null);
                 updatePagination(result);
                 if (result.getList() != null) {
                     for (Announcement a : result.getList()) {

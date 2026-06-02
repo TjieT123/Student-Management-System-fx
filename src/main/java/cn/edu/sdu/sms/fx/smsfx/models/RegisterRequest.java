@@ -12,6 +12,13 @@ public class RegisterRequest {
     @JsonProperty("sch_id")
     private String schId;
 
+    // 学生专用字段（注册时若 role=STUDENT 则必填）
+    private String major;
+    private String gender;
+
+    @JsonProperty("s_class")
+    private Integer sClass;
+
     public RegisterRequest() {}
 
     public String getUsername() { return username; }
@@ -31,4 +38,13 @@ public class RegisterRequest {
 
     public String getSchId() { return schId; }
     public void setSchId(String schId) { this.schId = schId; }
+
+    public String getMajor() { return major; }
+    public void setMajor(String major) { this.major = major; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public Integer getSClass() { return sClass; }
+    public void setSClass(Integer sClass) { this.sClass = sClass; }
 }

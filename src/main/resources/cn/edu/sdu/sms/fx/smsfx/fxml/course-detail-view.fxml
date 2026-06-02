@@ -41,9 +41,14 @@
                     visible="false" managed="false"/>
 
             <!-- 发布作业（仅教师） -->
-            <Button fx:id="publishHomeworkBtn" text="发布作业"
-                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"
-                    visible="false" managed="false"/>
+            <HBox spacing="10">
+                <Button fx:id="publishHomeworkBtn" text="发布作业"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14;"
+                        visible="false" managed="false"/>
+                <Button fx:id="viewStudentsBtn" text="查看选课学生"
+                        style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-size: 14;"
+                        visible="false" managed="false"/>
+            </HBox>
 
             <!-- 作业列表 -->
             <VBox spacing="10">

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class StudentHomeworkItem {
     private Integer id;
     private String title;
+    private String content;  // 作业内容/题目要求
     private String deadline;
     private String courseName;
     private String teacherName;
@@ -22,6 +23,9 @@ public class StudentHomeworkItem {
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }

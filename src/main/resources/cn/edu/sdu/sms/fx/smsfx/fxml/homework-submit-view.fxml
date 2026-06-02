@@ -32,6 +32,13 @@
                 <HBox spacing="10"><Label text="提交状态：" style="-fx-min-width: 80; -fx-font-weight: bold;"/><Label fx:id="statusLabel"/></HBox>
             </VBox>
 
+            <!-- 作业内容/题目要求 -->
+            <VBox spacing="5" style="-fx-background-color: #eaf2f8; -fx-background-radius: 5; -fx-padding: 12;">
+                <Label text="📋 作业要求：" style="-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: #2c3e50;"/>
+                <TextArea fx:id="homeworkContentArea" editable="false" prefRowCount="5" wrapText="true"
+                          style="-fx-background-color: white; -fx-control-inner-background: white;"/>
+            </VBox>
+
             <!-- 已提交内容展示区 -->
             <VBox fx:id="previousSubmissionBox" spacing="8" visible="false" managed="false"
                   style="-fx-background-color: #f8f9fa; -fx-background-radius: 5; -fx-padding: 12;">

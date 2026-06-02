@@ -340,6 +340,27 @@ public class ApiClient {
     }
 
     /**
+     * 获取课程选课学生列表（仅任课教师可查看）
+     */
+    public static List<Student> getEnrolledStudents(Integer courseId) {
+        Map<String, Object> params = new HashMap<>();
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/course/" + courseId + "/students"), params, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.getRaw(
+                        url("/api/course/" + courseId + "/students"), params, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, new TypeReference<List<Student>>() {});
+    }
+
+    /**
      * 修改课程
      */
     public static Course updateCourse(Integer id, String courseName, String detail,
@@ -525,6 +546,27 @@ public class ApiClient {
     }
 
     /**
+     * 获取作业内容（含题目要求、截止时间、提交状态等信息）
+     */
+    public static StudentHomeworkItem getHomeworkContent(Integer homeworkId) {
+        Map<String, Object> params = new HashMap<>();
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/student/homework/" + homeworkId + "/content"), params, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.getRaw(
+                        url("/api/student/homework/" + homeworkId + "/content"), params, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, StudentHomeworkItem.class);
+    }
+
+    /**
      * 获取学生自己的作业提交记录
      */
     public static HomeworkSubmit getMySubmission(Integer homeworkId) {
@@ -582,10 +624,13 @@ public class ApiClient {
     /**
      * 分页获取所有学生
      */
-    public static PageResult<Student> getAllStudents(int page, int pageSize) {
+    public static PageResult<Student> getAllStudents(int page, int pageSize,
+                                                      String sid, String name) {
         Map<String, Object> params = new HashMap<>();
         params.put("page", page);
         params.put("pageSize", pageSize);
+        if (sid != null && !sid.isEmpty()) params.put("sid", sid);
+        if (name != null && !name.isEmpty()) params.put("name", name);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/getAll"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
@@ -597,10 +642,13 @@ public class ApiClient {
     /**
      * 分页获取公告列表
      */
-    public static PageResult<Announcement> getAnnouncementList(int page, int pageSize) {
+    public static PageResult<Announcement> getAnnouncementList(int page, int pageSize,
+                                                                String id, String title) {
         Map<String, Object> params = new HashMap<>();
         params.put("page", page);
         params.put("pageSize", pageSize);
+        if (id != null && !id.isEmpty()) params.put("id", id);
+        if (title != null && !title.isEmpty()) params.put("title", title);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/announcement/list"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
@@ -667,10 +715,13 @@ public class ApiClient {
     /**
      * 获取管理员用户列表（按角色）
      */
-    public static PageResult<AdminUserVO> getAdminUserList(String role, int page, int pageSize) {
+    public static PageResult<AdminUserVO> getAdminUserList(String role, int page, int pageSize,
+                                                            String schId, String name) {
         Map<String, Object> params = new HashMap<>();
         params.put("page", page);
         params.put("pageSize", pageSize);
+        if (schId != null && !schId.isEmpty()) params.put("schId", schId);
+        if (name != null && !name.isEmpty()) params.put("name", name);
         String endpoint;
         switch (role) {
             case "TEACHER": endpoint = "/api/admin/user/teacher/list"; break;
@@ -737,14 +788,28 @@ public class ApiClient {
     }
 
     /**
-     * 获取所有教师列表（不分页）
+     * 获取所有教师列表（不分页，供下拉框等使用）
      */
-    public static List<Teacher> getAllTeachers() {
+    public static List<Teacher> getAllTeachers(String schId, String name) {
+        PageResult<Teacher> result = getAllTeachersPaged(1, 9999, schId, name);
+        return result != null ? result.getList() : null;
+    }
+
+    /**
+     * 分页获取教师列表
+     */
+    public static PageResult<Teacher> getAllTeachersPaged(int page, int pageSize,
+                                                           String schId, String name) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("pageSize", pageSize);
+        if (schId != null && !schId.isEmpty()) params.put("schId", schId);
+        if (name != null && !name.isEmpty()) params.put("name", name);
         HttpResponse<String> response = UnirestRequest.getRaw(
-                url("/api/admin/teacher/list"), new HashMap<>(), SessionManager.getToken());
+                url("/api/admin/teacher/list"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, new TypeReference<List<Teacher>>() {});
+        return convertData(dataNode, new TypeReference<PageResult<Teacher>>() {});
     }
 
     /**

@@ -3,35 +3,31 @@ package cn.edu.sdu.sms.fx.smsfx.controller;
 import cn.edu.sdu.sms.fx.smsfx.models.ApiException;
 import cn.edu.sdu.sms.fx.smsfx.models.RegisterRequest;
 import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
-import javafx.geometry.Insets;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
-import javafx.stage.Modality;
 
 /**
  * 注册对话框控制器
  */
 public class RegisterController {
 
-    /**
-     * 显示注册对话框
-     */
     public static void showDialog() {
         Dialog<RegisterRequest> dialog = new Dialog<>();
         dialog.setTitle("用户注册");
         dialog.setHeaderText("请输入注册信息");
-        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setResizable(true);
 
-        // 按钮
         ButtonType registerButtonType = new ButtonType("注册", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(registerButtonType, ButtonType.CANCEL);
 
-        // 表单
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
+
+        int row = 0;
 
         TextField usernameField = new TextField();
         usernameField.setPromptText("用户名");
@@ -42,40 +38,75 @@ public class RegisterController {
         TextField nameField = new TextField();
         nameField.setPromptText("姓名");
 
+        // 身份选择（显示中文，传英文值）
         ComboBox<String> roleCombo = new ComboBox<>();
-        roleCombo.getItems().addAll("STUDENT", "TEACHER");
-        roleCombo.setValue("STUDENT");
-        roleCombo.setPromptText("角色");
+        roleCombo.getItems().addAll("学生", "老师");
+        roleCombo.setValue("学生");
 
         TextField phoneField = new TextField();
         phoneField.setPromptText("手机号");
-        TextField schIdField = new TextField();
-        schIdField.setPromptText("工号/学号");
 
-        grid.add(new Label("用户名:"), 0, 0);
-        grid.add(usernameField, 1, 0);
-        grid.add(new Label("密码:"), 0, 1);
-        grid.add(passwordField, 1, 1);
-        grid.add(new Label("确认密码:"), 0, 2);
-        grid.add(confirmPasswordField, 1, 2);
-        grid.add(new Label("姓名:"), 0, 3);
-        grid.add(nameField, 1, 3);
-        grid.add(new Label("角色:"), 0, 4);
-        grid.add(roleCombo, 1, 4);
-        grid.add(new Label("手机号:"), 0, 5);
-        grid.add(phoneField, 1, 5);
-        grid.add(new Label("工号/学号:"), 0, 6);
-        grid.add(schIdField, 1, 6);
+        Label schIdLabel = new Label("学号:");
+        TextField schIdField = new TextField();
+        schIdField.setPromptText("学号");
+
+        // 学生专用字段
+        Label majorLabel = new Label("专业:");
+        TextField majorField = new TextField();
+        majorField.setPromptText("专业");
+
+        Label genderLabel = new Label("性别:");
+        ComboBox<String> genderCombo = new ComboBox<>();
+        genderCombo.getItems().addAll("男", "女");
+        genderCombo.setValue("男");
+
+        Label classLabel = new Label("班级:");
+        TextField classField = new TextField();
+        classField.setPromptText("班级（数字）");
+
+        // 基础字段
+        grid.add(new Label("用户名:"), 0, row);
+        grid.add(usernameField, 1, row++);
+        grid.add(new Label("密码:"), 0, row);
+        grid.add(passwordField, 1, row++);
+        grid.add(new Label("确认密码:"), 0, row);
+        grid.add(confirmPasswordField, 1, row++);
+        grid.add(new Label("姓名:"), 0, row);
+        grid.add(nameField, 1, row++);
+        grid.add(new Label("身份:"), 0, row);
+        grid.add(roleCombo, 1, row++);
+        grid.add(new Label("手机号:"), 0, row);
+        grid.add(phoneField, 1, row++);
+        grid.add(schIdLabel, 0, row);
+        grid.add(schIdField, 1, row++);
+
+        // 学生专用字段行索引
+        int majorRow = row;
+        grid.add(majorLabel, 0, row);
+        grid.add(majorField, 1, row++);
+        int genderRow = row;
+        grid.add(genderLabel, 0, row);
+        grid.add(genderCombo, 1, row++);
+        int classRow = row;
+        grid.add(classLabel, 0, row);
+        grid.add(classField, 1, row++);
+
+        // 角色切换时：显示/隐藏学生字段，更改学号/工号标签
+        roleCombo.setOnAction(e -> {
+            boolean isStudent = "学生".equals(roleCombo.getValue());
+            setRowVisible(grid, majorRow, isStudent);
+            setRowVisible(grid, genderRow, isStudent);
+            setRowVisible(grid, classRow, isStudent);
+            schIdLabel.setText(isStudent ? "学号:" : "工号:");
+            schIdField.setPromptText(isStudent ? "学号" : "工号");
+        });
 
         dialog.getDialogPane().setContent(grid);
-
-        // 请求焦点
         Platform.runLater(usernameField::requestFocus);
 
-        // 转换结果
+        // 结果转换
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == registerButtonType) {
-                // 验证
                 if (usernameField.getText().trim().isEmpty()
                         || passwordField.getText().isEmpty()
                         || nameField.getText().trim().isEmpty()) {
@@ -87,19 +118,35 @@ public class RegisterController {
                     return null;
                 }
 
+                boolean isStudent = "学生".equals(roleCombo.getValue());
                 RegisterRequest req = new RegisterRequest();
                 req.setUsername(usernameField.getText().trim());
                 req.setPassword(passwordField.getText());
                 req.setName(nameField.getText().trim());
-                req.setRole(roleCombo.getValue());
+                req.setRole(isStudent ? "STUDENT" : "TEACHER");
                 req.setPhone(phoneField.getText().trim());
                 req.setSchId(schIdField.getText().trim());
+
+                if (isStudent) {
+                    if (majorField.getText().trim().isEmpty()
+                            || classField.getText().trim().isEmpty()) {
+                        showAlert(Alert.AlertType.WARNING, "提示", "请填写专业和班级");
+                        return null;
+                    }
+                    req.setMajor(majorField.getText().trim());
+                    req.setGender(genderCombo.getValue());
+                    try {
+                        req.setSClass(Integer.parseInt(classField.getText().trim()));
+                    } catch (NumberFormatException e) {
+                        showAlert(Alert.AlertType.WARNING, "提示", "班级请输入数字");
+                        return null;
+                    }
+                }
                 return req;
             }
             return null;
         });
 
-        // 处理注册
         var result = dialog.showAndWait();
         result.ifPresent(req -> {
             try {
@@ -121,6 +168,16 @@ public class RegisterController {
         });
     }
 
+    private static void setRowVisible(GridPane grid, int row, boolean visible) {
+        for (javafx.scene.Node node : grid.getChildren()) {
+            Integer nodeRow = GridPane.getRowIndex(node);
+            if (nodeRow != null && nodeRow == row) {
+                node.setVisible(visible);
+                node.setManaged(visible);
+            }
+        }
+    }
+
     private static void showAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
@@ -128,5 +185,4 @@ public class RegisterController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
 }

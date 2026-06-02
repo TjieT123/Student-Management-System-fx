@@ -4,10 +4,13 @@ import cn.edu.sdu.sms.fx.smsfx.models.*;
 import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import cn.edu.sdu.sms.fx.smsfx.util.NavigationManager;
 import cn.edu.sdu.sms.fx.smsfx.util.SessionManager;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
@@ -22,6 +25,7 @@ public class CourseDetailController extends BaseController {
     @FXML private Label detailLabel;
     @FXML private Button enrollCancelBtn;
     @FXML private Button publishHomeworkBtn;
+    @FXML private Button viewStudentsBtn;
     @FXML private Button moreHomeworkBtn;
     @FXML private VBox homeworkContainer;
 
@@ -76,6 +80,9 @@ public class CourseDetailController extends BaseController {
                     NavigationManager.navigateTo("homework-publish-view.fxml",
                             (HomeworkPublishController controller) -> controller.setPreselectedCourseId(courseId));
                 });
+                viewStudentsBtn.setVisible(true);
+                viewStudentsBtn.setManaged(true);
+                viewStudentsBtn.setOnAction(e -> handleViewStudents());
             }
         } catch (Exception e) {
             showError("加载课程详情失败: " + e.getMessage());
@@ -194,6 +201,48 @@ public class CourseDetailController extends BaseController {
                 label.setText(status);
         }
         return label;
+    }
+
+    private void handleViewStudents() {
+        try {
+            List<Student> students = ApiClient.getEnrolledStudents(courseId);
+            if (students == null || students.isEmpty()) {
+                showInfo("暂无学生选课");
+                return;
+            }
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("选课学生列表");
+            dialog.setHeaderText(currentCourse.getCourseName() + " — 选课学生（共 " + students.size() + " 人）");
+            dialog.setResizable(true);
+
+            TableView<Student> table = new TableView<>();
+            TableColumn<Student, String> sidCol = new TableColumn<>("学号");
+            sidCol.setCellValueFactory(new PropertyValueFactory<>("sid"));
+            TableColumn<Student, String> nameCol = new TableColumn<>("姓名");
+            nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+            TableColumn<Student, String> majorCol = new TableColumn<>("专业");
+            majorCol.setCellValueFactory(new PropertyValueFactory<>("major"));
+            TableColumn<Student, String> genderCol = new TableColumn<>("性别");
+            genderCol.setCellValueFactory(new PropertyValueFactory<>("gender"));
+            TableColumn<Student, Integer> classCol = new TableColumn<>("班级");
+            classCol.setCellValueFactory(new PropertyValueFactory<>("sClass"));
+
+            table.getColumns().addAll(sidCol, nameCol, majorCol, genderCol, classCol);
+            table.setItems(FXCollections.observableArrayList(students));
+            table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            table.setPrefHeight(400);
+            table.setPrefWidth(600);
+
+            VBox content = new VBox(10, table);
+            content.setPadding(new Insets(10));
+            dialog.getDialogPane().setContent(content);
+            dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+            dialog.showAndWait();
+        } catch (Exception e) {
+            showError("加载选课学生失败: " + e.getMessage());
+        }
     }
 
     private void handleCancelEnroll() {
