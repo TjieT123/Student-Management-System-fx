@@ -49,7 +49,7 @@
                             <Button fx:id="editPhoneBtn" text="修改"
                                     style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 12;"/>
                         </HBox>
-                        <HBox spacing="10"><Label text="角色：" style="-fx-min-width: 80;"/><Label fx:id="infoRoleLabel" text=""/></HBox>
+                        <HBox spacing="10"><Label text="身份：" style="-fx-min-width: 80;"/><Label fx:id="infoRoleLabel" text=""/></HBox>
                     </VBox>
                 </TitledPane>
 
