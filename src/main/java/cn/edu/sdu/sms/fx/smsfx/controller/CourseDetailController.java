@@ -7,13 +7,18 @@ import cn.edu.sdu.sms.fx.smsfx.util.SessionManager;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +31,7 @@ public class CourseDetailController extends BaseController {
     @FXML private Button enrollCancelBtn;
     @FXML private Button publishHomeworkBtn;
     @FXML private Button viewStudentsBtn;
+    @FXML private Button scoreStatsBtn;
     @FXML private Button moreHomeworkBtn;
     @FXML private VBox homeworkContainer;
 
@@ -71,6 +77,9 @@ public class CourseDetailController extends BaseController {
                 enrollCancelBtn.setOnAction(e -> handleCancelEnroll());
                 publishHomeworkBtn.setVisible(false);
                 publishHomeworkBtn.setManaged(false);
+                scoreStatsBtn.setVisible(true);
+                scoreStatsBtn.setManaged(true);
+                scoreStatsBtn.setOnAction(e -> handleScoreStatistics());
             } else if ("TEACHER".equals(role)) {
                 enrollCancelBtn.setVisible(false);
                 enrollCancelBtn.setManaged(false);
@@ -160,11 +169,7 @@ public class CourseDetailController extends BaseController {
     private HBox createTeacherHomeworkCard(Homework hw) {
         HBox card = new HBox(15);
         card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12; -fx-cursor: hand;");
-        card.setOnMouseClicked(e -> {
-            NavigationManager.navigateTo("homework-grading-list-view.fxml",
-                    (HomeworkGradingListController controller) -> controller.setHomeworkId(hw.getId()));
-        });
+        card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12;");
 
         Label titleLabel = new Label(hw.getTitle());
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
@@ -173,8 +178,71 @@ public class CourseDetailController extends BaseController {
         Label deadlineLabel = new Label("截止: " + formatDateTime(hw.getDeadline()));
         deadlineLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
 
-        card.getChildren().addAll(titleLabel, spacer, deadlineLabel);
+        // 编辑按钮
+        Button editBtn = new Button("编辑");
+        editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11;");
+        editBtn.setOnAction(e -> showEditHomeworkDialog(hw));
+
+        // 删除按钮
+        Button deleteBtn = new Button("删除");
+        deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
+        deleteBtn.setOnAction(e -> {
+            if (showConfirm("删除作业", "确定要删除作业 \"" + hw.getTitle() + "\" 吗？\n将同时删除该作业下的所有学生提交记录。")) {
+                try {
+                    ApiClient.deleteHomework(hw.getId());
+                    showInfo("删除成功");
+                    loadHomeworkList();
+                } catch (Exception ex) { showError(ex.getMessage()); }
+            }
+        });
+
+        // 点击标题区域跳转到批改列表
+        HBox clickArea = new HBox(15, titleLabel, spacer, deadlineLabel);
+        clickArea.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        HBox.setHgrow(clickArea, javafx.scene.layout.Priority.ALWAYS);
+        clickArea.setStyle("-fx-cursor: hand;");
+        clickArea.setOnMouseClicked(e -> {
+            NavigationManager.navigateTo("homework-grading-list-view.fxml",
+                    (HomeworkGradingListController controller) -> controller.setHomeworkId(hw.getId()));
+        });
+
+        card.getChildren().addAll(clickArea, editBtn, deleteBtn);
         return card;
+    }
+
+    private void showEditHomeworkDialog(Homework hw) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("编辑作业");
+        dialog.setResizable(true);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
+
+        TextField titleField = new TextField(hw.getTitle());
+        TextArea contentArea = new TextArea(hw.getContent() != null ? hw.getContent() : "");
+        contentArea.setPrefRowCount(5);
+        TextField deadlineField = new TextField(hw.getDeadline() != null ? hw.getDeadline() : "");
+
+        int row = 0;
+        grid.add(new Label("标题:"), 0, row); grid.add(titleField, 1, row++);
+        grid.add(new Label("内容:"), 0, row); grid.add(contentArea, 1, row++);
+        grid.add(new Label("截止时间:"), 0, row); grid.add(deadlineField, 1, row++);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK) {
+                try {
+                    ApiClient.updateHomework(hw.getId(),
+                            titleField.getText().trim(),
+                            contentArea.getText() != null ? contentArea.getText().trim() : "",
+                            deadlineField.getText().trim());
+                    showInfo("修改成功");
+                    loadHomeworkList();
+                } catch (Exception e) { showError(e.getMessage()); }
+            }
+        });
     }
 
     private Label createStatusLabel(String status) {
@@ -242,6 +310,79 @@ public class CourseDetailController extends BaseController {
             dialog.showAndWait();
         } catch (Exception e) {
             showError("加载选课学生失败: " + e.getMessage());
+        }
+    }
+
+    private void handleScoreStatistics() {
+        try {
+            // 获取所有作业（含分数）
+            PageResult<StudentHomeworkItem> result = ApiClient.getStudentHomeworkList(courseId, 1, 100);
+            if (result == null || result.getList() == null || result.getList().isEmpty()) {
+                showInfo("暂无作业数据");
+                return;
+            }
+
+            // 筛选已批改的作业，按 deadline 排序（时间线）
+            List<StudentHomeworkItem> graded = new ArrayList<>();
+            for (StudentHomeworkItem hw : result.getList()) {
+                if ("GRADED".equals(hw.getStatus()) && hw.getScore() != null) {
+                    graded.add(hw);
+                }
+            }
+
+            if (graded.isEmpty()) {
+                showInfo("暂无已批改的作业");
+                return;
+            }
+
+            // 超过 10 次只保留最近 10 次
+            if (graded.size() > 10) {
+                graded = graded.subList(graded.size() - 10, graded.size());
+            }
+
+            // 创建折线图
+            NumberAxis xAxis = new NumberAxis();
+            xAxis.setLabel("作业序号");
+            xAxis.setTickUnit(1);
+            xAxis.setMinorTickVisible(false);
+            xAxis.setForceZeroInRange(false);
+            xAxis.setAutoRanging(false);
+            xAxis.setLowerBound(0);
+            xAxis.setUpperBound(10);
+            NumberAxis yAxis = new NumberAxis(0, 100, 10);
+            yAxis.setLabel("分数");
+
+            LineChart<Number, Number> chart = new LineChart<>(xAxis, yAxis);
+            chart.setTitle("作业成绩趋势 — " + currentCourse.getCourseName() + "（只统计最近10次）");
+            chart.setPrefSize(600, 350);
+            chart.setCreateSymbols(true);
+
+            XYChart.Series<Number, Number> series = new XYChart.Series<>();
+            series.setName("成绩");
+            for (int i = 0; i < graded.size(); i++) {
+                series.getData().add(new XYChart.Data<>(i + 1, graded.get(i).getScore()));
+            }
+            chart.getData().add(series);
+
+            // 及格线
+            XYChart.Series<Number, Number> passLine = new XYChart.Series<>();
+            passLine.setName("及格线(60)");
+            passLine.getData().add(new XYChart.Data<>(0, 60));
+            passLine.getData().add(new XYChart.Data<>(10, 60));
+            chart.getData().add(passLine);
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("作业成绩统计");
+            dialog.setHeaderText(currentCourse.getCourseName() + " — 已批改 " + graded.size() + " 次作业");
+            dialog.setResizable(true);
+
+            VBox content = new VBox(10, chart);
+            content.setPadding(new Insets(10));
+            dialog.getDialogPane().setContent(content);
+            dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+            dialog.showAndWait();
+        } catch (Exception e) {
+            showError("加载成绩统计失败: " + e.getMessage());
         }
     }
 

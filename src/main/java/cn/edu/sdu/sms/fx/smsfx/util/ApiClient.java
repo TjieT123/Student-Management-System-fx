@@ -402,6 +402,51 @@ public class ApiClient {
     }
 
     /**
+     * 修改作业
+     */
+    public static boolean updateHomework(Integer id, String title, String content, String deadline) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", id);
+        if (title != null) body.put("title", title);
+        if (content != null) body.put("content", content);
+        if (deadline != null) body.put("deadline", deadline);
+        HttpResponse<String> response = UnirestRequest.postRaw(
+                url("/api/teacher/homework/update"), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.postRaw(
+                        url("/api/teacher/homework/update"), body, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return false;
+            }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    /**
+     * 删除作业（级联删除提交记录）
+     */
+    public static boolean deleteHomework(Integer id) {
+        HttpResponse<String> response = UnirestRequest.postRaw(
+                url("/api/teacher/homework/delete/" + id), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.postRaw(
+                        url("/api/teacher/homework/delete/" + id), SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return false;
+            }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    /**
      * 获取作业列表（教师端，全局）
      */
     public static PageResult<Homework> getHomeworkList(int page, int pageSize) {
@@ -986,6 +1031,18 @@ public class ApiClient {
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
         return convertData(dataNode, new TypeReference<PageResult<Course>>() {});
+    }
+
+    /**
+     * 获取管理员首页统计数据
+     */
+    public static AdminStatistics getAdminStatistics() {
+        Map<String, Object> params = new HashMap<>();
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/admin/statistics"), params, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, AdminStatistics.class);
     }
 
     // ==================== 通用错误处理 ====================

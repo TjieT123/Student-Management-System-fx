@@ -31,6 +31,78 @@ public class AdminHomeController extends BaseController {
         adminMgmtBtn.setOnAction(e -> showAdminManagement());
         courseMgmtBtn.setOnAction(e -> showCourseManagement());
         announcementMgmtBtn.setOnAction(e -> showAnnouncementManagement());
+
+        // 首次进入显示首页仪表盘
+        showDashboard();
+    }
+
+    private void showDashboard() {
+        contentArea.getChildren().clear();
+        sectionTitle.setText("管理后台首页");
+
+        try {
+            AdminStatistics stats = ApiClient.getAdminStatistics();
+            VBox dash = new VBox(25);
+            dash.setPadding(new Insets(30));
+            dash.setAlignment(javafx.geometry.Pos.CENTER);
+
+            // 数字卡片行
+            HBox cards = new HBox(25);
+            cards.setAlignment(javafx.geometry.Pos.CENTER);
+            cards.getChildren().addAll(
+                    createDashCard("总用户数", stats.getTotalUsers(), "#2c3e50"),
+                    createDashCard("管理员", stats.getAdminCount(), "#8e44ad"),
+                    createDashCard("教师", stats.getTeacherCount(), "#2980b9"),
+                    createDashCard("学生", stats.getStudentCount(), "#27ae60")
+            );
+
+            // 饼状图
+            javafx.scene.chart.PieChart pieChart = new javafx.scene.chart.PieChart();
+            pieChart.setTitle("用户分布");
+            pieChart.setLabelsVisible(true);
+            pieChart.setPrefSize(400, 300);
+            javafx.scene.chart.PieChart.Data adminSlice =
+                    new javafx.scene.chart.PieChart.Data("管理员 (" + stats.getAdminCount() + ")", stats.getAdminCount());
+            javafx.scene.chart.PieChart.Data teacherSlice =
+                    new javafx.scene.chart.PieChart.Data("教师 (" + stats.getTeacherCount() + ")", stats.getTeacherCount());
+            javafx.scene.chart.PieChart.Data studentSlice =
+                    new javafx.scene.chart.PieChart.Data("学生 (" + stats.getStudentCount() + ")", stats.getStudentCount());
+            pieChart.setData(javafx.collections.FXCollections.observableArrayList(
+                    adminSlice, teacherSlice, studentSlice));
+            adminSlice.nodeProperty().addListener((obs, old, n) ->
+            { if (n != null) n.setStyle("-fx-pie-color: #8e44ad;"); });
+            teacherSlice.nodeProperty().addListener((obs, old, n) ->
+            { if (n != null) n.setStyle("-fx-pie-color: #2980b9;"); });
+            studentSlice.nodeProperty().addListener((obs, old, n) ->
+            { if (n != null) n.setStyle("-fx-pie-color: #27ae60;"); });
+
+            HBox pieBox = new HBox(pieChart);
+            pieBox.setAlignment(javafx.geometry.Pos.CENTER);
+
+            dash.getChildren().addAll(cards, pieBox);
+            contentArea.getChildren().add(dash);
+        } catch (Exception e) {
+            Label err = new Label("加载统计数据失败: " + e.getMessage());
+            err.setStyle("-fx-text-fill: red; -fx-font-size: 14;");
+            contentArea.getChildren().add(err);
+        }
+    }
+
+    private VBox createDashCard(String label, Integer value, String color) {
+        VBox card = new VBox(8);
+        card.setAlignment(javafx.geometry.Pos.CENTER);
+        card.setPrefWidth(160);
+        card.setPrefHeight(100);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 10; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2); -fx-padding: 15;");
+
+        Label valueLabel = new Label(value != null ? String.valueOf(value) : "0");
+        valueLabel.setStyle("-fx-font-size: 36; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+        Label textLabel = new Label(label);
+        textLabel.setStyle("-fx-font-size: 14; -fx-text-fill: #7f8c8d;");
+
+        card.getChildren().addAll(valueLabel, textLabel);
+        return card;
     }
 
     // ==================== 搜索栏工具 ====================

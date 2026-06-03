@@ -1,13 +1,19 @@
 package cn.edu.sdu.sms.fx.smsfx.controller;
 
+import cn.edu.sdu.sms.fx.smsfx.models.LoginData;
+import cn.edu.sdu.sms.fx.smsfx.models.LoginResponse;
+import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import cn.edu.sdu.sms.fx.smsfx.util.NavigationManager;
 import cn.edu.sdu.sms.fx.smsfx.util.SessionManager;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.Cursor;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 
 import java.util.Optional;
 
@@ -40,6 +46,93 @@ public abstract class BaseController {
         if (profileButton != null) {
             profileButton.setOnAction(e -> goToProfile());
         }
+
+        // 添加用户切换下拉框到顶部栏
+        addUserSwitchComboBox();
+
+        // 添加底部信息栏
+        addFooterBar();
+    }
+
+    /**
+     * 在个人中心按钮左侧添加用户切换下拉框
+     */
+    private void addUserSwitchComboBox() {
+        if (profileButton == null) return;
+        // 防止重复添加
+        if (profileButton.getParent() instanceof HBox topBar
+                && topBar.lookup("#userSwitchCombo") != null) return;
+
+        ComboBox<String> userCombo = new ComboBox<>();
+        userCombo.setId("userSwitchCombo");
+        userCombo.setPrefWidth(130);
+        userCombo.setPromptText("切换账号");
+        userCombo.getItems().addAll("admin", "student01", "teacher01");
+        // 选中当前用户
+        if (SessionManager.getCurrentUser() != null) {
+            userCombo.setValue(SessionManager.getCurrentUser().getUsername());
+        }
+        userCombo.setOnAction(e -> {
+            String username = userCombo.getValue();
+            if (username == null || username.isEmpty()) return;
+            if (username.equals(SessionManager.getCurrentUser().getUsername())) return;
+            switchUser(username);
+        });
+
+        javafx.scene.Node profileNode = profileButton;
+        if (profileNode.getParent() instanceof HBox topBar) {
+            topBar.getChildren().add(topBar.getChildren().indexOf(profileNode), userCombo);
+        }
+    }
+
+    /**
+     * 切换用户：调用登录 API 获取新 Token，跳转对应主页
+     */
+    private void switchUser(String username) {
+        try {
+            LoginResponse loginResponse = ApiClient.login(username, "123456");
+            LoginData data = loginResponse.getData();
+            SessionManager.setSession(data.getUser(), data.getToken(), data.getRefreshToken());
+            goHome();
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "切换失败", "无法切换到用户: " + username + "\n" + e.getMessage());
+        }
+    }
+
+    /**
+     * 在页面底部添加信息栏
+     */
+    private void addFooterBar() {
+        if (titleLabel == null || titleLabel.getParent() == null) return;
+        // 防止重复添加
+        javafx.scene.Node root = titleLabel.getScene() != null
+                ? titleLabel.getScene().getRoot() : null;
+        if (root instanceof VBox rootVBox
+                && rootVBox.lookup("#systemFooter") != null) return;
+
+        String footerText = "服务器：http://localhost:1010  数据库：java_2_52  "
+                + "团队编号：52  成员：202500550148-余小鹿、202500550436-薛煜昕、202400201138-陶天杰、202420161250-李昊";
+
+        Label footer = new Label(footerText);
+        footer.setId("systemFooter");
+        footer.setMaxWidth(Double.MAX_VALUE);
+        footer.setStyle("-fx-font-size: 11; -fx-text-fill: #95a5a6; "
+                + "-fx-background-color: #f8f9fa; -fx-padding: 6 15; "
+                + "-fx-border-color: #ecf0f1; -fx-border-width: 1 0 0 0;");
+        footer.setAlignment(javafx.geometry.Pos.CENTER);
+
+        // 延迟添加，确保场景已就绪
+        Platform.runLater(() -> {
+            if (titleLabel.getScene() != null
+                    && titleLabel.getScene().getRoot() instanceof VBox rootVBox) {
+                // 给内容区设置 VBox.vgrow，使底部栏始终在底部
+                if (rootVBox.getChildren().size() >= 2
+                        && rootVBox.getChildren().get(1) instanceof javafx.scene.layout.Region content) {
+                    VBox.setVgrow(content, Priority.ALWAYS);
+                }
+                rootVBox.getChildren().add(footer);
+            }
+        });
     }
 
     /**

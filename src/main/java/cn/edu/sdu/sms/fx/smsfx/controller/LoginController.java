@@ -52,6 +52,10 @@ public class LoginController {
         } catch (Exception e) {
             System.err.println("背景图片加载失败: " + e.getMessage());
         }
+
+        // 预填管理员账号密码
+        usernameField.setText("admin");
+        passwordField.setText("123456");
     }
 
     /**
