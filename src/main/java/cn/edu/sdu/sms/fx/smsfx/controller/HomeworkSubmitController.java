@@ -26,6 +26,9 @@ public class HomeworkSubmitController extends BaseController {
     @FXML private VBox gradeBox;
     @FXML private Label scoreLabel;
     @FXML private Label commentLabel;
+    @FXML private Button aiSuggestionBtn;
+    @FXML private VBox aiSuggestionBox;
+    @FXML private Label aiSuggestionLabel;
     @FXML private Label deadlinePassedLabel;
     @FXML private VBox submitArea;
     @FXML private TextArea contentArea;
@@ -179,6 +182,13 @@ public class HomeworkSubmitController extends BaseController {
                         scoreLabel.setStyle("-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
                         commentLabel.setText(detail.getComment() != null ?
                                 detail.getComment() : "无评语");
+
+                        // AI 学习建议按钮
+                        aiSuggestionBtn.setVisible(true);
+                        aiSuggestionBtn.setManaged(true);
+                        aiSuggestionBox.setVisible(false);
+                        aiSuggestionBox.setManaged(false);
+                        aiSuggestionBtn.setOnAction(e -> handleAiSuggestion(detail.getId()));
                     }
                 }
             } catch (Exception e) {
@@ -186,6 +196,33 @@ public class HomeworkSubmitController extends BaseController {
                 System.err.println("加载学生提交详情失败: " + e.getMessage());
             }
         }
+    }
+
+    private void handleAiSuggestion(Integer submissionId) {
+        aiSuggestionBtn.setText("生成中...");
+        aiSuggestionBtn.setDisable(true);
+        new Thread(() -> {
+            try {
+                AiSuggestionResult result = ApiClient.getAiSuggestion(submissionId);
+                javafx.application.Platform.runLater(() -> {
+                    if (result != null && result.getSuggestion() != null) {
+                        aiSuggestionLabel.setText(result.getSuggestion());
+                        aiSuggestionBox.setVisible(true);
+                        aiSuggestionBox.setManaged(true);
+                    } else {
+                        showWarning("AI 未返回建议");
+                    }
+                    aiSuggestionBtn.setText("AI 学习建议");
+                    aiSuggestionBtn.setDisable(false);
+                });
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    showError("AI 建议生成失败: " + e.getMessage());
+                    aiSuggestionBtn.setText("AI 学习建议");
+                    aiSuggestionBtn.setDisable(false);
+                });
+            }
+        }).start();
     }
 
     private void handleSubmit() {

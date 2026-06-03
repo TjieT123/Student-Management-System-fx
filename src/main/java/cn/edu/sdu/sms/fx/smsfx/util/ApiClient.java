@@ -519,6 +519,52 @@ public class ApiClient {
         return convertData(dataNode, AiGradeResult.class);
     }
 
+    /**
+     * AI 学习建议（学生端）
+     */
+    public static AiSuggestionResult getAiSuggestion(Integer submissionId) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("submissionId", submissionId);
+        HttpResponse<String> response = UnirestRequest.postRaw(
+                url("/api/student/homework/ai-suggestion"), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败（AI建议生成耗时较长，请稍后重试）");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.postRaw(
+                        url("/api/student/homework/ai-suggestion"), body, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        if (response.getStatus() != 200) {
+            throw new ApiException(response.getStatus(), "AI建议生成失败，请稍后重试");
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, AiSuggestionResult.class);
+    }
+
+    /**
+     * 获取作业提交统计（教师端）
+     */
+    public static HomeworkStatistics getHomeworkStatistics(Integer homeworkId) {
+        Map<String, Object> params = new HashMap<>();
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/teacher/homework/" + homeworkId + "/statistics"), params, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.getRaw(
+                        url("/api/teacher/homework/" + homeworkId + "/statistics"), params, SessionManager.getToken());
+            } else {
+                handleAuthFailure();
+                return null;
+            }
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, HomeworkStatistics.class);
+    }
+
     // ==================== 学生作业接口 ====================
 
     /**

@@ -56,6 +56,17 @@
                     <Label text="教师评语：" style="-fx-font-weight: bold; -fx-text-fill: #555;"/>
                     <Label fx:id="commentLabel" wrapText="true"
                            style="-fx-text-fill: #555; -fx-background-color: #fff; -fx-background-radius: 3; -fx-padding: 8;"/>
+
+                    <!-- AI 学习建议 -->
+                    <Separator/>
+                    <Button fx:id="aiSuggestionBtn" text="AI 学习建议"
+                            style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-size: 13;"/>
+                    <VBox fx:id="aiSuggestionBox" spacing="5" visible="false" managed="false"
+                          style="-fx-background-color: #f4ecf7; -fx-background-radius: 5; -fx-padding: 10;">
+                        <Label text="AI 学习改进建议：" style="-fx-font-weight: bold; -fx-font-size: 13; -fx-text-fill: #6c3483;"/>
+                        <Label fx:id="aiSuggestionLabel" wrapText="true"
+                               style="-fx-text-fill: #555; -fx-font-size: 13;"/>
+                    </VBox>
                 </VBox>
             </VBox>
 

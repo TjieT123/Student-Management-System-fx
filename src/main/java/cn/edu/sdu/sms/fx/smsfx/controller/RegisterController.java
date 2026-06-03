@@ -19,7 +19,7 @@ public class RegisterController {
         dialog.setHeaderText("请输入注册信息");
         dialog.setResizable(true);
 
-        ButtonType registerButtonType = new ButtonType("注册", ButtonBar.ButtonData.OK_DONE);
+        ButtonType registerButtonType = new ButtonType("注册", ButtonBar.ButtonData.OTHER);
         dialog.getDialogPane().getButtonTypes().addAll(registerButtonType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
@@ -104,68 +104,69 @@ public class RegisterController {
         dialog.getDialogPane().setContent(grid);
         Platform.runLater(usernameField::requestFocus);
 
-        // 结果转换
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == registerButtonType) {
-                if (usernameField.getText().trim().isEmpty()
-                        || passwordField.getText().isEmpty()
-                        || nameField.getText().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.WARNING, "提示", "请填写所有必填字段");
-                    return null;
-                }
-                if (!passwordField.getText().equals(confirmPasswordField.getText())) {
-                    showAlert(Alert.AlertType.WARNING, "提示", "两次输入的密码不一致");
-                    return null;
-                }
-
-                boolean isStudent = "学生".equals(roleCombo.getValue());
-                RegisterRequest req = new RegisterRequest();
-                req.setUsername(usernameField.getText().trim());
-                req.setPassword(passwordField.getText());
-                req.setName(nameField.getText().trim());
-                req.setRole(isStudent ? "STUDENT" : "TEACHER");
-                req.setPhone(phoneField.getText().trim());
-                req.setSchId(schIdField.getText().trim());
-
-                if (isStudent) {
-                    if (majorField.getText().trim().isEmpty()
-                            || classField.getText().trim().isEmpty()) {
-                        showAlert(Alert.AlertType.WARNING, "提示", "请填写专业和班级");
-                        return null;
-                    }
-                    req.setMajor(majorField.getText().trim());
-                    req.setGender(genderCombo.getValue());
-                    try {
-                        req.setSClass(Integer.parseInt(classField.getText().trim()));
-                    } catch (NumberFormatException e) {
-                        showAlert(Alert.AlertType.WARNING, "提示", "班级请输入数字");
-                        return null;
-                    }
-                }
-                return req;
+        // 拦截注册按钮：前端校验失败时不关闭对话框
+        Button registerBtn = (Button) dialog.getDialogPane().lookupButton(registerButtonType);
+        registerBtn.setOnAction(e -> {
+            if (usernameField.getText().trim().isEmpty()
+                    || passwordField.getText().isEmpty()
+                    || nameField.getText().trim().isEmpty()) {
+                showAlert(Alert.AlertType.WARNING, "提示", "请填写所有必填字段");
+                return;
             }
-            return null;
+            if (!passwordField.getText().equals(confirmPasswordField.getText())) {
+                showAlert(Alert.AlertType.WARNING, "提示", "两次输入的密码不一致");
+                return;
+            }
+
+            boolean isStudent = "学生".equals(roleCombo.getValue());
+            RegisterRequest req = new RegisterRequest();
+            req.setUsername(usernameField.getText().trim());
+            req.setPassword(passwordField.getText());
+            req.setName(nameField.getText().trim());
+            req.setRole(isStudent ? "STUDENT" : "TEACHER");
+            req.setPhone(phoneField.getText().trim());
+            req.setSchId(schIdField.getText().trim());
+
+            if (isStudent) {
+                if (majorField.getText().trim().isEmpty()
+                        || classField.getText().trim().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "提示", "请填写专业和班级");
+                    return;
+                }
+                req.setMajor(majorField.getText().trim());
+                req.setGender(genderCombo.getValue());
+                try {
+                    req.setSClass(Integer.parseInt(classField.getText().trim()));
+                } catch (NumberFormatException ex) {
+                    showAlert(Alert.AlertType.WARNING, "提示", "班级请输入数字");
+                    return;
+                }
+            }
+
+            // 验证通过，关闭对话框并传递结果
+            dialog.setResult(req);
         });
 
-        var result = dialog.showAndWait();
-        result.ifPresent(req -> {
+        // 循环：注册失败时保持对话框，直到成功或用户取消
+        while (true) {
+            var result = dialog.showAndWait();
+            if (result.isEmpty()) break; // 用户点击取消
+
             try {
-                ApiClient.register(req);
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("注册成功");
-                alert.setHeaderText(null);
-                alert.setContentText("注册成功，请登录");
-                alert.showAndWait();
-            } catch (ApiException e) {
-                if (e.getCode() == 409) {
-                    showAlert(Alert.AlertType.ERROR, "注册失败", "用户名已存在");
+                ApiClient.register(result.get());
+                showAlert(Alert.AlertType.INFORMATION, "注册成功", "注册成功，请登录");
+                break;
+            } catch (ApiException ex) {
+                if (ex.getCode() == 409) {
+                    showAlert(Alert.AlertType.ERROR, "注册失败", "用户名已存在，请更换用户名");
                 } else {
-                    showAlert(Alert.AlertType.ERROR, "注册失败", e.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "注册失败", ex.getMessage());
                 }
-            } catch (Exception e) {
+                // 对话框自动重新弹出，字段内容保留
+            } catch (Exception ex) {
                 showAlert(Alert.AlertType.ERROR, "网络错误", "网络连接失败，请检查网络");
             }
-        });
+        }
     }
 
     private static void setRowVisible(GridPane grid, int row, boolean visible) {
