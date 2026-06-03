@@ -36,7 +36,7 @@
 
             <Label text="截止时间："/>
             <HBox spacing="10">
-                <DatePicker fx:id="deadlineDatePicker"/>
+                <DatePicker fx:id="deadlineDatePicker" editable="false"/>
                 <TextField fx:id="deadlineTimeField" promptText="HH:mm:ss" prefWidth="100"/>
             </HBox>
 

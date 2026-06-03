@@ -211,6 +211,15 @@ public class CourseDetailController extends BaseController {
     }
 
     private void showEditHomeworkDialog(Homework hw) {
+        // 通过学生接口获取作业完整内容
+        String fullContent = "";
+        try {
+            StudentHomeworkItem detail = ApiClient.getHomeworkContent(hw.getId());
+            if (detail != null && detail.getContent() != null) {
+                fullContent = detail.getContent();
+            }
+        } catch (Exception ignored) {}
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("编辑作业");
         dialog.setResizable(true);
@@ -218,15 +227,31 @@ public class CourseDetailController extends BaseController {
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
 
-        TextField titleField = new TextField(hw.getTitle());
-        TextArea contentArea = new TextArea(hw.getContent() != null ? hw.getContent() : "");
+        TextField titleField = new TextField(hw.getTitle() != null ? hw.getTitle() : "");
+        TextArea contentArea = new TextArea(fullContent);
         contentArea.setPrefRowCount(5);
-        TextField deadlineField = new TextField(hw.getDeadline() != null ? hw.getDeadline() : "");
+
+        // 日期选择器 + 时间输入（与发布作业形式一致）
+        DatePicker datePicker = new DatePicker();
+        datePicker.setEditable(false);
+        TextField timeField = new TextField("23:59:59");
+        timeField.setPrefWidth(100);
+        // 从已有 deadline 解析日期和时间
+        if (hw.getDeadline() != null && !hw.getDeadline().isEmpty()) {
+            String dl = hw.getDeadline().replace("T", " ");
+            try {
+                String[] parts = dl.split(" ");
+                if (parts.length >= 1) datePicker.setValue(java.time.LocalDate.parse(parts[0]));
+                if (parts.length >= 2) timeField.setText(parts[1]);
+            } catch (Exception ignored) {}
+        }
+        HBox deadlineBox = new HBox(10, datePicker, timeField);
+        deadlineBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         int row = 0;
         grid.add(new Label("标题:"), 0, row); grid.add(titleField, 1, row++);
         grid.add(new Label("内容:"), 0, row); grid.add(contentArea, 1, row++);
-        grid.add(new Label("截止时间:"), 0, row); grid.add(deadlineField, 1, row++);
+        grid.add(new Label("截止时间:"), 0, row); grid.add(deadlineBox, 1, row++);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -234,10 +259,36 @@ public class CourseDetailController extends BaseController {
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
                 try {
+                    if (datePicker.getValue() == null) { showWarning("请选择截止日期"); return; }
+                    String timeText = timeField.getText().trim();
+                    if (timeText.isEmpty()) timeText = "23:59:59";
+                    if (!timeText.matches("\\d{2}:\\d{2}:\\d{2}")) {
+                        showWarning("时间格式错误，请使用 HH:mm:ss 格式（如 23:59:59）"); return;
+                    }
+                    // 校验时、分、秒范围
+                    String[] timeParts = timeText.split(":");
+                    int h = Integer.parseInt(timeParts[0]);
+                    int m = Integer.parseInt(timeParts[1]);
+                    int s = Integer.parseInt(timeParts[2]);
+                    if (h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 59) {
+                        showWarning("时间数值超出范围（时:0-23, 分:0-59, 秒:0-59）"); return;
+                    }
+                    String deadline = datePicker.getValue().toString() + " " + timeText;
+                    // 校验日期+时间整体合法 + 不早于当前时间
+                    try {
+                        java.time.format.DateTimeFormatter fmt =
+                                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                        java.time.LocalDateTime dt = java.time.LocalDateTime.parse(deadline, fmt);
+                        if (dt.isBefore(java.time.LocalDateTime.now())) {
+                            showWarning("截止时间不能早于当前时间"); return;
+                        }
+                    } catch (java.time.format.DateTimeParseException ex) {
+                        showWarning("日期或时间格式错误"); return;
+                    }
                     ApiClient.updateHomework(hw.getId(),
                             titleField.getText().trim(),
                             contentArea.getText() != null ? contentArea.getText().trim() : "",
-                            deadlineField.getText().trim());
+                            deadline);
                     showInfo("修改成功");
                     loadHomeworkList();
                 } catch (Exception e) { showError(e.getMessage()); }
