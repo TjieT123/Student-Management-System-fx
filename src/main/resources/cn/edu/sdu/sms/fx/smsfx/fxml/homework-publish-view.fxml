@@ -35,9 +35,12 @@
             <TextArea fx:id="contentArea" promptText="请输入作业内容" prefRowCount="8" maxWidth="400"/>
 
             <Label text="截止时间："/>
-            <HBox spacing="10">
+            <HBox spacing="5">
                 <DatePicker fx:id="deadlineDatePicker" editable="false"/>
-                <TextField fx:id="deadlineTimeField" promptText="HH:mm:ss" prefWidth="100"/>
+                <ComboBox fx:id="deadlineHourField" editable="false" prefWidth="65" visibleRowCount="12"/>
+                <Label text="时"/>
+                <ComboBox fx:id="deadlineMinuteField" editable="false" prefWidth="65" visibleRowCount="12"/>
+                <Label text="分"/>
             </HBox>
 
             <HBox spacing="15">

@@ -447,8 +447,113 @@ public class ApiClient {
     }
 
     /**
-     * 获取作业列表（教师端，全局）
+     * 修改公告
      */
+    public static boolean updateAnnouncement(Integer id, String title, String content,
+                                              String publisherName) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", id);
+        if (title != null) body.put("title", title);
+        if (content != null) body.put("content", content);
+        if (publisherName != null) body.put("publisherName", publisherName);
+        HttpResponse<String> response = UnirestRequest.postRaw(
+                url("/api/announcement/update"), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.postRaw(
+                        url("/api/announcement/update"), body, SessionManager.getToken());
+            } else { handleAuthFailure(); return false; }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    // ==================== 附件操作 ====================
+
+    /**
+     * 教师上传作业附件
+     */
+    public static boolean uploadHomeworkAttachment(Integer homeworkId,
+            String fileName, String fileType, long size, String base64) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("fileName", fileName);
+        body.put("fileType", fileType);
+        body.put("size", size);
+        body.put("base64", base64);
+        HttpResponse<String> response = UnirestRequest.putRaw(
+                url("/api/teacher/homework/" + homeworkId + "/attachment"), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.putRaw(
+                        url("/api/teacher/homework/" + homeworkId + "/attachment"), body, SessionManager.getToken());
+            } else { handleAuthFailure(); return false; }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    /**
+     * 教师删除作业附件
+     */
+    public static boolean deleteHomeworkAttachment(Integer homeworkId, int index) {
+        HttpResponse<String> response = UnirestRequest.deleteRaw(
+                url("/api/teacher/homework/" + homeworkId + "/attachment/" + index), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.deleteRaw(
+                        url("/api/teacher/homework/" + homeworkId + "/attachment/" + index), SessionManager.getToken());
+            } else { handleAuthFailure(); return false; }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    /**
+     * 学生上传提交附件
+     */
+    public static boolean uploadSubmissionAttachment(Integer homeworkId,
+            String fileName, String fileType, long size, String base64) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("fileName", fileName);
+        body.put("fileType", fileType);
+        body.put("size", size);
+        body.put("base64", base64);
+        HttpResponse<String> response = UnirestRequest.putRaw(
+                url("/api/student/homework/" + homeworkId + "/attachment"), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.putRaw(
+                        url("/api/student/homework/" + homeworkId + "/attachment"), body, SessionManager.getToken());
+            } else { handleAuthFailure(); return false; }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    /**
+     * 学生删除提交附件（homeworkId 在请求体中）
+     */
+    public static boolean deleteSubmissionAttachment(Integer homeworkId, int index) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("homeworkId", homeworkId);
+        HttpResponse<String> response = UnirestRequest.deleteRawWithBody(
+                url("/api/student/homework/attachment/" + index), body, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.deleteRawWithBody(
+                        url("/api/student/homework/attachment/" + index), body, SessionManager.getToken());
+            } else { handleAuthFailure(); return false; }
+        }
+        parseResponse(response.getBody());
+        return true;
+    }
+
+    // ==================== 作业列表接口 ====================
     public static PageResult<Homework> getHomeworkList(int page, int pageSize) {
         Map<String, Object> params = new HashMap<>();
         params.put("page", page);

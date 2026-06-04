@@ -39,12 +39,21 @@
                           style="-fx-background-color: white; -fx-control-inner-background: white;"/>
             </VBox>
 
-            <!-- 已提交内容展示区 -->
+            <!-- 教师作业附件 -->
+            <VBox fx:id="homeworkAttachmentBox" spacing="5" visible="false" managed="false"
+                  style="-fx-background-color: #eaf2f8; -fx-background-radius: 5; -fx-padding: 12;">
+                <Label text="📎 作业附件：" style="-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: #2c3e50;"/>
+            </VBox>
+
+            <!-- 已提交内容展示区（含批改结果 + AI建议） -->
             <VBox fx:id="previousSubmissionBox" spacing="8" visible="false" managed="false"
                   style="-fx-background-color: #f8f9fa; -fx-background-radius: 5; -fx-padding: 12;">
                 <Label text="我的提交内容：" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
                 <TextArea fx:id="previousContentArea" editable="false" prefRowCount="6" wrapText="true"/>
                 <Label fx:id="submitTimeLabel" text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 12;"/>
+
+                <!-- 已提交附件 -->
+                <VBox fx:id="submittedAttachmentBox" spacing="5" visible="false" managed="false"/>
 
                 <!-- 批改结果区（仅已批改时显示） -->
                 <Separator visible="false" managed="false" fx:id="gradeSeparator"/>
@@ -77,6 +86,17 @@
             <VBox fx:id="submitArea" spacing="10" visible="false" managed="false">
                 <Label text="提交作业内容：" style="-fx-font-weight: bold;"/>
                 <TextArea fx:id="contentArea" promptText="请输入作业内容" prefRowCount="10" wrapText="true"/>
+
+                <!-- 附件上传区 -->
+                <VBox spacing="5">
+                    <Label text="📎 附件（可选）：" style="-fx-font-weight: bold; -fx-font-size: 13;"/>
+                    <HBox spacing="10">
+                        <Button fx:id="selectFileBtn" text="选择文件"
+                                style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-size: 12;"/>
+                    </HBox>
+                    <VBox fx:id="pendingAttachmentBox" spacing="3"/>
+                </VBox>
+
                 <Button fx:id="submitBtn" text="提交作业"
                         style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14;"/>
             </VBox>

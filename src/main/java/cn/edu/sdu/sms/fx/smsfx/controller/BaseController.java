@@ -256,6 +256,43 @@ public abstract class BaseController {
     }
 
     /**
+     * 校验手机号：必须 11 位数字。返回 null 表示通过，否则返回错误信息。
+     */
+    protected String validatePhone(String phone) {
+        if (phone == null || phone.isEmpty()) return null; // 允许为空
+        if (!phone.matches("\\d{11}")) return "手机号必须为11位数字";
+        return null;
+    }
+
+    /**
+     * 校验正整数（> 0）。null/空返回 null（表示通过/不强制）
+     */
+    protected String validatePositiveInt(String text, String fieldName) {
+        if (text == null || text.isEmpty()) return null;
+        try {
+            int val = Integer.parseInt(text);
+            if (val <= 0) return fieldName + "必须为正整数";
+        } catch (NumberFormatException e) {
+            return fieldName + "格式不正确，请输入正整数";
+        }
+        return null;
+    }
+
+    /**
+     * 校验分数：0-100 的整数
+     */
+    protected String validateScore(String text) {
+        if (text == null || text.isEmpty()) return "请输入分数";
+        try {
+            int val = Integer.parseInt(text);
+            if (val < 0 || val > 100) return "分数必须在0-100之间";
+        } catch (NumberFormatException e) {
+            return "分数格式不正确";
+        }
+        return null;
+    }
+
+    /**
      * 根据角色返回头像图标文字
      */
     protected String roleToIcon(String role) {

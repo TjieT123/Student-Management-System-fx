@@ -2,6 +2,8 @@ package cn.edu.sdu.sms.fx.smsfx.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HomeworkSubmit {
     private Integer id;
@@ -14,6 +16,7 @@ public class HomeworkSubmit {
     private String submitTime;
     private String studentName;
     private String teacherName;
+    private List<AttachmentItem> attachments;
 
     public HomeworkSubmit() {}
 
@@ -46,4 +49,7 @@ public class HomeworkSubmit {
 
     public String getTeacherName() { return teacherName; }
     public void setTeacherName(String teacherName) { this.teacherName = teacherName; }
+
+    public List<AttachmentItem> getAttachments() { return attachments; }
+    public void setAttachments(List<AttachmentItem> attachments) { this.attachments = attachments; }
 }

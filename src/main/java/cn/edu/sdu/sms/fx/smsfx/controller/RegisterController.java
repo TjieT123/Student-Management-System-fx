@@ -107,40 +107,68 @@ public class RegisterController {
         // 拦截注册按钮：前端校验失败时不关闭对话框
         Button registerBtn = (Button) dialog.getDialogPane().lookupButton(registerButtonType);
         registerBtn.setOnAction(e -> {
+            // 必填字段检查
             if (usernameField.getText().trim().isEmpty()
                     || passwordField.getText().isEmpty()
-                    || nameField.getText().trim().isEmpty()) {
+                    || nameField.getText().trim().isEmpty()
+                    || confirmPasswordField.getText().isEmpty()
+                    || schIdField.getText().trim().isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "提示", "请填写所有必填字段");
                 return;
             }
+            // 用户名长度
+            if (usernameField.getText().trim().length() < 3) {
+                showAlert(Alert.AlertType.WARNING, "提示", "用户名长度不能少于3位");
+                return;
+            }
+            // 密码长度
+            if (passwordField.getText().length() < 6) {
+                showAlert(Alert.AlertType.WARNING, "提示", "密码长度不能少于6位");
+                return;
+            }
+            // 两次密码一致
             if (!passwordField.getText().equals(confirmPasswordField.getText())) {
                 showAlert(Alert.AlertType.WARNING, "提示", "两次输入的密码不一致");
                 return;
             }
 
             boolean isStudent = "学生".equals(roleCombo.getValue());
+
+            // 电话校验
+            String phone = phoneField.getText().trim();
+            if (!phone.isEmpty() && !phone.matches("\\d{11}")) {
+                showAlert(Alert.AlertType.WARNING, "提示", "手机号必须为11位数字");
+                return;
+            }
+
+            // 班级校验
+            String classText = classField.getText().trim();
+            if (isStudent && !classText.isEmpty()) {
+                try {
+                    int cls = Integer.parseInt(classText);
+                    if (cls <= 0) { showAlert(Alert.AlertType.WARNING, "提示", "班级必须为正整数"); return; }
+                } catch (NumberFormatException ex) {
+                    showAlert(Alert.AlertType.WARNING, "提示", "班级格式不正确，请输入正整数"); return;
+                }
+            }
+
             RegisterRequest req = new RegisterRequest();
             req.setUsername(usernameField.getText().trim());
             req.setPassword(passwordField.getText());
             req.setName(nameField.getText().trim());
             req.setRole(isStudent ? "STUDENT" : "TEACHER");
-            req.setPhone(phoneField.getText().trim());
+            req.setPhone(phone);
             req.setSchId(schIdField.getText().trim());
 
             if (isStudent) {
                 if (majorField.getText().trim().isEmpty()
-                        || classField.getText().trim().isEmpty()) {
+                        || classText.isEmpty()) {
                     showAlert(Alert.AlertType.WARNING, "提示", "请填写专业和班级");
                     return;
                 }
                 req.setMajor(majorField.getText().trim());
                 req.setGender(genderCombo.getValue());
-                try {
-                    req.setSClass(Integer.parseInt(classField.getText().trim()));
-                } catch (NumberFormatException ex) {
-                    showAlert(Alert.AlertType.WARNING, "提示", "班级请输入数字");
-                    return;
-                }
+                req.setSClass(Integer.parseInt(classText));
             }
 
             // 验证通过，关闭对话框并传递结果

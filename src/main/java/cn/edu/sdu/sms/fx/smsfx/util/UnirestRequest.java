@@ -288,6 +288,78 @@ public class UnirestRequest {
         }
     }
 
+    /**
+     * 发送带 Body 和 Token 的 PUT 请求（含 401 处理）
+     */
+    public static HttpResponse<String> putRaw(String url, Object jsonBody, String token) {
+        try {
+            String jsonStr = objectMapper.writeValueAsString(jsonBody);
+            if (token != null && !token.isEmpty()) {
+                return Unirest.put(url)
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + token)
+                        .body(jsonStr)
+                        .asString();
+            } else {
+                return Unirest.put(url)
+                        .header("Content-Type", "application/json")
+                        .body(jsonStr)
+                        .asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 发送带 Token 的 DELETE 请求（含 401 处理）
+     */
+    public static HttpResponse<String> deleteRaw(String url, String token) {
+        try {
+            if (token != null && !token.isEmpty()) {
+                return Unirest.delete(url)
+                        .header("Authorization", "Bearer " + token)
+                        .asString();
+            } else {
+                return Unirest.delete(url).asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 发送带 Body 和 Token 的 DELETE 请求
+     */
+    public static HttpResponse<String> deleteRawWithBody(String url, Object jsonBody, String token) {
+        try {
+            String jsonStr = objectMapper.writeValueAsString(jsonBody);
+            if (token != null && !token.isEmpty()) {
+                return Unirest.delete(url)
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + token)
+                        .body(jsonStr)
+                        .asString();
+            } else {
+                return Unirest.delete(url)
+                        .header("Content-Type", "application/json")
+                        .body(jsonStr)
+                        .asString();
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // ==================== 关闭 Unirest 资源 ====================
 
     /**

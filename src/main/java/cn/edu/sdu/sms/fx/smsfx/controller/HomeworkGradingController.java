@@ -34,6 +34,7 @@ public class HomeworkGradingController extends BaseController {
     }
 
     public void setSubmitId(Integer submitId, Integer homeworkId) {
+        if (submitId == null) { showError("提交ID无效"); return; }
         this.submitId = submitId;
         this.homeworkId = homeworkId;
         loadSubmissionDetail();
@@ -100,6 +101,22 @@ public class HomeworkGradingController extends BaseController {
 
                 Platform.runLater(() -> {
                     if (result != null) {
+                        if (result.getScore() == null) {
+                            showError("AI未返回有效分数，请重试或手动批改");
+                            aiGradeBtn.setDisable(false);
+                            aiGradeBtn.setText("AI判卷");
+                            aiStatusLabel.setVisible(false);
+                            aiStatusLabel.setManaged(false);
+                            return;
+                        }
+                        if (result.getScore() < 0 || result.getScore() > 100) {
+                            showError("AI返回分数超出范围(0-100): " + result.getScore() + "，请重试或手动批改");
+                            aiGradeBtn.setDisable(false);
+                            aiGradeBtn.setText("AI判卷");
+                            aiStatusLabel.setVisible(false);
+                            aiStatusLabel.setManaged(false);
+                            return;
+                        }
                         scoreField.setText(String.valueOf(result.getScore()));
                         StringBuilder fullComment = new StringBuilder();
                         fullComment.append(result.getComment() != null ? result.getComment() : "");
@@ -171,12 +188,17 @@ public class HomeworkGradingController extends BaseController {
             showWarning("请输入有效的数字分数"); return;
         }
 
+        String comment = commentArea.getText() != null ? commentArea.getText().trim() : "";
+        if (comment.length() > 5000) { showWarning("评语不能超过5000字符"); return; }
+
+        submitGradeBtn.setDisable(true);
         try {
-            CheckHomeworkRequest req = new CheckHomeworkRequest(submitId, score, commentArea.getText().trim());
+            CheckHomeworkRequest req = new CheckHomeworkRequest(submitId, score, comment);
             ApiClient.checkHomework(req);
             showInfo("批改成功");
             goBack();
         } catch (Exception e) {
+            submitGradeBtn.setDisable(false);
             showError(e.getMessage());
         }
     }

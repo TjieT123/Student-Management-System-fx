@@ -37,6 +37,7 @@ public class HomeworkGradingListController extends BaseController {
     }
 
     public void setHomeworkId(Integer homeworkId) {
+        if (homeworkId == null) { showError("作业ID无效"); return; }
         this.homeworkId = homeworkId;
         homeworkTitleLabel.setText("作业批改");
         loadSubmissions();

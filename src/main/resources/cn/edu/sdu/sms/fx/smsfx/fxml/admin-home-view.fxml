@@ -31,6 +31,9 @@
                        style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 10;"/>
                 <Separator style="-fx-background-color: #2c3e50;"/>
 
+                <Button fx:id="homeBtn" text="🏠 首页" maxWidth="200"
+                        style="-fx-background-color: transparent; -fx-text-fill: #f39c12; -fx-alignment: CENTER-LEFT; -fx-font-size: 14;"/>
+
                 <Button fx:id="teacherMgmtBtn" text="教师管理" maxWidth="200"
                         style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14;"/>
                 <Button fx:id="studentMgmtBtn" text="学生管理" maxWidth="200"

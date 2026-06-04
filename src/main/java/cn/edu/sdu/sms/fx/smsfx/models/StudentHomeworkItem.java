@@ -2,6 +2,8 @@ package cn.edu.sdu.sms.fx.smsfx.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.List;
+
 /**
  * 学生端作业列表项（含提交状态）
  */
@@ -15,6 +17,7 @@ public class StudentHomeworkItem {
     private String teacherName;
     private String status;  // UNSUBMIT / SUBMITTED / LATE / GRADED
     private Integer score;   // 分数（仅已批改时返回）
+    private List<AttachmentItem> attachments;  // 教师上传的作业附件
 
     public StudentHomeworkItem() {}
 
@@ -41,4 +44,7 @@ public class StudentHomeworkItem {
 
     public Integer getScore() { return score; }
     public void setScore(Integer score) { this.score = score; }
+
+    public List<AttachmentItem> getAttachments() { return attachments; }
+    public void setAttachments(List<AttachmentItem> attachments) { this.attachments = attachments; }
 }

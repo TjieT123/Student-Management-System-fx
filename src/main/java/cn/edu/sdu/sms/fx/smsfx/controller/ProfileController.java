@@ -80,6 +80,11 @@ public class ProfileController extends BaseController {
                 showWarning("请输入手机号");
                 return;
             }
+            String phoneErr = validatePhone(newPhone);
+            if (phoneErr != null) {
+                showWarning(phoneErr);
+                return;
+            }
             try {
                 User user = SessionManager.getCurrentUser();
                 Map<String, Object> data = new HashMap<>();
@@ -117,8 +122,16 @@ public class ProfileController extends BaseController {
             showWarning("请填写所有密码字段");
             return;
         }
+        if (newPwd.length() < 6) {
+            showWarning("新密码长度不能少于6位");
+            return;
+        }
         if (!newPwd.equals(confirmPwd)) {
             showWarning("两次输入的新密码不一致");
+            return;
+        }
+        if (oldPwd.equals(newPwd)) {
+            showWarning("新密码不能与旧密码相同");
             return;
         }
 

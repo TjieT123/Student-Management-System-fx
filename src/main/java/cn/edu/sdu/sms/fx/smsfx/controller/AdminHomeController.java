@@ -16,6 +16,7 @@ public class AdminHomeController extends BaseController {
     @FXML private VBox sidebar;
     @FXML private Label sectionTitle;
     @FXML private StackPane contentArea;
+    @FXML private Button homeBtn;
     @FXML private Button teacherMgmtBtn;
     @FXML private Button studentMgmtBtn;
     @FXML private Button adminMgmtBtn;
@@ -26,6 +27,7 @@ public class AdminHomeController extends BaseController {
     @FXML
     public void initialize() {
         super.initialize();
+        homeBtn.setOnAction(e -> showDashboard());
         teacherMgmtBtn.setOnAction(e -> showTeacherManagement());
         studentMgmtBtn.setOnAction(e -> showStudentManagement());
         adminMgmtBtn.setOnAction(e -> showAdminManagement());
@@ -480,47 +482,74 @@ public class AdminHomeController extends BaseController {
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
                 try {
+                    // 必填字段校验
+                    String phone = phoneField.getText().trim();
+                    String nameText = nameField.getText().trim();
+                    String schIdText = schIdField.getText().trim();
+                    if (existingUser == null) {
+                        String uname = usernameField.getText().trim();
+                        String pwd = passwordField.getText();
+                        if (uname.isEmpty() || pwd.isEmpty() || nameText.isEmpty() || schIdText.isEmpty()) {
+                            showWarning("请填写所有必填字段（用户名、密码、姓名、工号/学号）"); return;
+                        }
+                        if (uname.length() < 3) { showWarning("用户名长度不能少于3位"); return; }
+                        if (pwd.length() < 6) { showWarning("密码长度不能少于6位"); return; }
+                    } else {
+                        if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
+                    }
+                    // 电话校验
+                    String phoneErr = validatePhone(phone);
+                    if (phoneErr != null) { showWarning(phoneErr); return; }
+                    // 班级校验
+                    String classText = classField.getText().trim();
+                    if (isStudent) {
+                        String majorText = majorField.getText().trim();
+                        if (majorText.isEmpty() || classText.isEmpty()) {
+                            showWarning("请填写专业和班级"); return;
+                        }
+                        if (!classText.isEmpty()) {
+                            String classErr = validatePositiveInt(classText, "班级");
+                            if (classErr != null) { showWarning(classErr); return; }
+                        }
+                    }
+
                     if (existingUser != null) {
-                        // 编辑：更新用户信息
                         Map<String, Object> data = new HashMap<>();
                         data.put("id", existingUser.getId());
                         data.put("name", nameField.getText().trim());
-                        data.put("phone", phoneField.getText().trim());
+                        data.put("phone", phone);
                         if (isStudent) {
                             data.put("major", majorField.getText().trim());
                             data.put("gender", genderCombo.getValue());
-                            try { data.put("sClass", Integer.parseInt(classField.getText().trim())); }
-                            catch (NumberFormatException e) { showWarning("班级请输入数字"); return; }
+                            if (!classText.isEmpty())
+                                data.put("sClass", Integer.parseInt(classText));
                         }
                         ApiClient.updateUser(data);
                         showInfo("修改成功");
                     } else if (isStudent) {
-                        // 添加学生：原子操作（user + student）
                         Map<String, Object> data = new HashMap<>();
                         data.put("username", usernameField.getText().trim());
                         data.put("password", passwordField.getText());
                         data.put("name", nameField.getText().trim());
-                        data.put("phone", phoneField.getText().trim());
+                        data.put("phone", phone);
                         data.put("sid", schIdField.getText().trim());
                         data.put("major", majorField.getText().trim());
                         data.put("gender", genderCombo.getValue());
-                        try { data.put("s_class", Integer.parseInt(classField.getText().trim())); }
-                        catch (NumberFormatException e) { showWarning("班级请输入数字"); return; }
+                        if (!classText.isEmpty())
+                            data.put("s_class", Integer.parseInt(classText));
                         ApiClient.addStudentUser(data);
                         showInfo("添加成功");
                     } else {
-                        // 添加教师/管理员：addUser 自动创建关联记录
                         Map<String, Object> data = new HashMap<>();
                         data.put("username", usernameField.getText().trim());
                         data.put("password", passwordField.getText());
                         data.put("name", nameField.getText().trim());
-                        data.put("phone", phoneField.getText().trim());
+                        data.put("phone", phone);
                         data.put("sch_id", schIdField.getText().trim());
                         data.put("role", role);
                         ApiClient.addUser(data);
                         showInfo("添加成功");
                     }
-                    // 刷新对应页面
                     switch (role) {
                         case "TEACHER" -> refreshTeacherTable();
                         case "STUDENT" -> refreshStudentTable();
@@ -680,15 +709,23 @@ public class AdminHomeController extends BaseController {
 
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
+                // 必填校验
+                String cid = courseIdField.getText().trim();
+                String cname = nameField.getText() != null ? nameField.getText().trim() : "";
+                String caddr = addressField.getText() != null ? addressField.getText().trim() : "";
+                if (existing == null && cid.isEmpty()) { showWarning("请输入课程ID"); return; }
+                if (cname.isEmpty()) { showWarning("课程名不能为空"); return; }
+                if (caddr.isEmpty()) { showWarning("授课地点不能为空"); return; }
+
                 Map<String, Object> data = new HashMap<>();
                 if (existing != null) {
                     data.put("id", fullCourseRef[0].getId());
                 } else {
-                    data.put("courseId", courseIdField.getText().trim());
+                    data.put("courseId", cid);
                 }
-                data.put("courseName", nameField.getText() != null ? nameField.getText().trim() : "");
+                data.put("courseName", cname);
                 data.put("detail", detailField.getText() != null ? detailField.getText().trim() : "");
-                data.put("address", addressField.getText() != null ? addressField.getText().trim() : "");
+                data.put("address", caddr);
                 if (teacherCombo.getValue() != null) data.put("teacherId", teacherCombo.getValue().getSchId());
 
                 try {
@@ -735,17 +772,20 @@ public class AdminHomeController extends BaseController {
         TableColumn<Announcement, Void> actionCol = new TableColumn<>("操作");
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button detailBtn = new Button("详情");
+            private final Button editBtn = new Button("编辑");
             private final Button deleteBtn = new Button("删除");
-            private final HBox box = new HBox(5, detailBtn, deleteBtn);
+            private final HBox box = new HBox(4, detailBtn, editBtn, deleteBtn);
             {
-                detailBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-                deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+                detailBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11;");
+                editBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 11;");
+                deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
             }
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) { setGraphic(null); return; }
                 Announcement a = getTableView().getItems().get(getIndex());
                 detailBtn.setOnAction(e -> showAnnouncementDetail(a.getId()));
+                editBtn.setOnAction(e -> showEditAnnouncementDialog(a));
                 deleteBtn.setOnAction(e -> {
                     if (showConfirm("删除确认", "确定要删除公告 \"" + a.getTitle() + "\" 吗？")) {
                         try {
@@ -819,10 +859,59 @@ public class AdminHomeController extends BaseController {
 
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
+                String title = titleField.getText().trim();
+                String content = contentField.getText() != null ? contentField.getText().trim() : "";
+                if (title.isEmpty()) { showWarning("标题不能为空"); return; }
+                if (content.isEmpty()) { showWarning("内容不能为空"); return; }
                 try {
-                    ApiClient.publishAnnouncement(titleField.getText(), contentField.getText(),
-                            publisherNameField.getText());
+                    ApiClient.publishAnnouncement(title, content,
+                            publisherNameField.getText().trim());
                     showInfo("发布成功");
+                    refreshAnnouncementTable();
+                } catch (Exception e) { showError(e.getMessage()); }
+            }
+        });
+    }
+
+    private void showEditAnnouncementDialog(Announcement existing) {
+        // 先获取完整内容
+        String fullContent = "";
+        try {
+            Announcement detail = ApiClient.getAnnouncementDetail(existing.getId());
+            if (detail != null && detail.getContent() != null) fullContent = detail.getContent();
+        } catch (Exception ignored) {}
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("编辑公告");
+        dialog.setResizable(true);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
+
+        TextField titleField = new TextField(existing.getTitle() != null ? existing.getTitle() : "");
+        TextArea contentArea = new TextArea(fullContent);
+        contentArea.setPrefRowCount(5);
+        TextField publisherNameField = new TextField(
+                existing.getPublisherName() != null ? existing.getPublisherName() : "");
+
+        grid.add(new Label("标题:"), 0, 0); grid.add(titleField, 1, 0);
+        grid.add(new Label("内容:"), 0, 1); grid.add(contentArea, 1, 1);
+        grid.add(new Label("发布人姓名:"), 0, 2); grid.add(publisherNameField, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK) {
+                String title = titleField.getText().trim();
+                String content = contentArea.getText() != null ? contentArea.getText().trim() : "";
+                if (title.isEmpty()) { showWarning("标题不能为空"); return; }
+                if (content.isEmpty()) { showWarning("内容不能为空"); return; }
+                try {
+                    ApiClient.updateAnnouncement(existing.getId(),
+                            title, content,
+                            publisherNameField.getText().trim());
+                    showInfo("修改成功");
                     refreshAnnouncementTable();
                 } catch (Exception e) { showError(e.getMessage()); }
             }
