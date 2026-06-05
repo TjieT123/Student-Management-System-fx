@@ -35,34 +35,31 @@
                     <Label fx:id="roleLabel" text="" style="-fx-font-size: 14; -fx-text-fill: #7f8c8d;"/>
                 </VBox>
 
-                <!-- 基本信息 -->
-                <TitledPane text="基本信息" expanded="true" maxWidth="500"
-                            style="-fx-font-size: 14;">
-                    <VBox spacing="10" style="-fx-padding: 15;">
-                        <HBox spacing="10"><Label text="姓名：" style="-fx-min-width: 80;"/><Label fx:id="infoNameLabel" text=""/></HBox>
-                        <HBox spacing="10"><Label text="工号/学号：" style="-fx-min-width: 80;"/><Label fx:id="schIdLabel" text=""/></HBox>
-                        <HBox spacing="10" alignment="CENTER_LEFT">
-                            <Label text="手机号：" style="-fx-min-width: 80;"/>
-                            <Label fx:id="phoneLabel" text=""/>
-                            <TextField fx:id="phoneEditField" promptText="新手机号" visible="false" managed="false"
-                                       style="-fx-pref-width: 150;"/>
-                            <Button fx:id="editPhoneBtn" text="修改"
-                                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 12;"/>
-                        </HBox>
-                        <HBox spacing="10"><Label text="身份：" style="-fx-min-width: 80;"/><Label fx:id="infoRoleLabel" text=""/></HBox>
-                    </VBox>
-                </TitledPane>
+                <!-- 基本信息+扩展信息 -->
+                <VBox fx:id="infoBox" spacing="8" style="-fx-padding: 10 15; -fx-background-color: white; -fx-background-radius: 8;" maxWidth="500">
+                    <Label text="基本信息" style="-fx-font-weight: bold; -fx-font-size: 14; -fx-padding: 0 0 5 0;"/>
+                    <HBox spacing="10"><Label text="姓名：" style="-fx-min-width: 80;"/><Label fx:id="infoNameLabel" text=""/></HBox>
+                    <HBox spacing="10"><Label text="工号/学号：" style="-fx-min-width: 80;"/><Label fx:id="schIdLabel" text=""/></HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="手机号：" style="-fx-min-width: 80;"/>
+                        <Label fx:id="phoneLabel" text=""/>
+                        <TextField fx:id="phoneEditField" promptText="新手机号" visible="false" managed="false" style="-fx-pref-width: 150;"/>
+                    </HBox>
+                    <HBox spacing="10"><Label text="身份：" style="-fx-min-width: 80;"/><Label fx:id="infoRoleLabel" text=""/></HBox>
+                </VBox>
+
+                <!-- 编辑按钮 -->
+                <HBox fx:id="editBtnRow" alignment="CENTER_RIGHT" maxWidth="500" style="-fx-padding: 0 15 0 0;">
+                    <Button fx:id="editPhoneBtn" text="编辑" style="-fx-background-color: #f39c12; -fx-text-fill: white;"/>
+                </HBox>
 
                 <!-- 修改密码 -->
-                <TitledPane text="修改密码" expanded="false" maxWidth="500"
-                            style="-fx-font-size: 14;">
+                <TitledPane text="修改密码" expanded="false" maxWidth="500" style="-fx-font-size: 14;">
                     <VBox spacing="10" style="-fx-padding: 15;">
                         <PasswordField fx:id="oldPasswordField" promptText="旧密码"/>
                         <PasswordField fx:id="newPasswordField" promptText="新密码"/>
                         <PasswordField fx:id="confirmPasswordField" promptText="确认新密码"/>
-                        <Button fx:id="changePasswordBtn" text="确认修改"
-                                style="-fx-background-color: #3498db; -fx-text-fill: white;"
-                                maxWidth="200"/>
+                        <Button fx:id="changePasswordBtn" text="确认修改" style="-fx-background-color: #3498db; -fx-text-fill: white;" maxWidth="200"/>
                     </VBox>
                 </TitledPane>
 

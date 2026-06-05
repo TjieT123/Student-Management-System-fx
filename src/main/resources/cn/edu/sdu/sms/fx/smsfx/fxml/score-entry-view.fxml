@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.ScoreEntryController">
+    <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
+        <Button fx:id="backButton" text="← 返回" style="-fx-background-color: transparent; -fx-text-fill: white;"/><Label fx:id="titleLabel" text="成绩录入" style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Region HBox.hgrow="ALWAYS"/><Button fx:id="profileButton" text="个人中心" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+    </HBox>
+    <VBox spacing="10" style="-fx-padding: 20;">
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="选择课程:"/><ComboBox fx:id="courseSelector" prefWidth="300" promptText="选择课程"/>
+            <Button fx:id="loadBtn" text="加载学生" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+        </HBox>
+        <Label fx:id="statusLabel" style="-fx-text-fill: #7f8c8d;"/>
+        <Label text="💡 提示：双击「期末成绩」列的单元格即可输入或修改成绩，范围 0-100" style="-fx-font-size: 12; -fx-text-fill: #95a5a6; -fx-padding: 0 0 5 0;"/>
+        <VBox fx:id="contentArea" spacing="10"/>
+    </VBox>
+</VBox>

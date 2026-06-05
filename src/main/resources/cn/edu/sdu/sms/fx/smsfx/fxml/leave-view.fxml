@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="cn.edu.sdu.sms.fx.smsfx.controller.LeaveController">
+    <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
+        <Button fx:id="backButton" text="← 返回" style="-fx-background-color: transparent; -fx-text-fill: white;"/><Label fx:id="titleLabel" text="请假申请" style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Region HBox.hgrow="ALWAYS"/><Button fx:id="profileButton" text="个人中心" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+    </HBox>
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"><VBox spacing="10" style="-fx-padding: 20;">
+        <TabPane>
+            <Tab text="提交申请" closable="false"><VBox spacing="10" style="-fx-padding: 10;">
+                <ComboBox fx:id="leaveType" promptText="请假类型"/>
+                <DatePicker fx:id="startDate" promptText="开始日期"/>
+                <DatePicker fx:id="endDate" promptText="结束日期"/>
+                <TextArea fx:id="leaveReason" promptText="请假事由" prefRowCount="3"/>
+                <Button fx:id="submitBtn" text="提交申请" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+            </VBox></Tab>
+            <Tab text="申请记录" closable="false"><VBox fx:id="leaveList" spacing="5"/></Tab>
+        </TabPane>
+    </VBox></ScrollPane>
+</VBox>

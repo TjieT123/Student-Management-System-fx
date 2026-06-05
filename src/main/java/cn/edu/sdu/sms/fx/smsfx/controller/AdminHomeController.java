@@ -34,8 +34,22 @@ public class AdminHomeController extends BaseController {
         courseMgmtBtn.setOnAction(e -> showCourseManagement());
         announcementMgmtBtn.setOnAction(e -> showAnnouncementManagement());
 
-        // 首次进入显示首页仪表盘
+        // 新增P1管理面板按钮
+        addSidebarButton("🏆 荣誉管理", e -> showHonorManagement());
+        addSidebarButton("💡 实践管理", e -> showPracticeManagement());
+        addSidebarButton("🏥 请假审批", e -> showLeaveManagement());
+        addSidebarButton("🎉 活动管理", e -> showActivityManagement());
+
         showDashboard();
+    }
+
+    private void addSidebarButton(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
+        Button btn = new Button(text);
+        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-pref-width: 180; -fx-padding: 10 20;");
+        btn.setOnAction(handler);
+        btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #34495e; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-pref-width: 180; -fx-padding: 10 20;"));
+        btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-pref-width: 180; -fx-padding: 10 20;"));
+        sidebar.getChildren().add(btn);
     }
 
     private void showDashboard() {
@@ -81,7 +95,11 @@ public class AdminHomeController extends BaseController {
             HBox pieBox = new HBox(pieChart);
             pieBox.setAlignment(javafx.geometry.Pos.CENTER);
 
-            dash.getChildren().addAll(cards, pieBox);
+            // 学期设置按钮
+            Button semBtn = new Button("📅 学期设置");
+            semBtn.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-size: 14;");
+            semBtn.setOnAction(e -> showSemesterSettings());
+            dash.getChildren().addAll(cards, pieBox, semBtn);
             contentArea.getChildren().add(dash);
         } catch (Exception e) {
             Label err = new Label("加载统计数据失败: " + e.getMessage());
@@ -223,17 +241,21 @@ public class AdminHomeController extends BaseController {
             private final Button editBtn = new Button("编辑");
             private final Button deleteBtn = new Button("删除");
             private final Button resetPwdBtn = new Button("重置密码");
-            private final HBox box = new HBox(5, editBtn, deleteBtn, resetPwdBtn);
+            private final Button detailBtn = new Button("详情");
+            private final HBox box;
             {
                 editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
                 deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
                 resetPwdBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white;");
+                detailBtn.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white;");
+                box = "STUDENT".equals(role) ? new HBox(5, editBtn, deleteBtn, resetPwdBtn, detailBtn) : new HBox(5, editBtn, deleteBtn, resetPwdBtn);
             }
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) { setGraphic(null); return; }
                 AdminUserVO user = getTableView().getItems().get(getIndex());
                 editBtn.setOnAction(e -> showAddEditUserDialog(user, role));
+                detailBtn.setOnAction(e -> showStudentDetailDialog(user));
                 deleteBtn.setOnAction(e -> {
                     if (showConfirm("删除确认", "确定要删除用户 " + user.getUsername() + " 吗？")) {
                         try {
@@ -928,5 +950,234 @@ public class AdminHomeController extends BaseController {
                     + "\n\n" + (a.getContent() != null ? a.getContent() : ""));
             alert.showAndWait();
         } catch (Exception e) { showError(e.getMessage()); }
+    }
+
+    /** 查看学生详情（含扩展字段编辑） */
+    private void showStudentDetailDialog(AdminUserVO user) {
+        Dialog<ButtonType> d = new Dialog<>(); d.setTitle("学生详情 - " + user.getName()); d.setResizable(true);
+        GridPane g = new GridPane(); g.setHgap(10); g.setVgap(8); g.setPadding(new Insets(15));
+        int r = 0;
+
+        TextField nameF = new TextField(user.getName() != null ? user.getName() : "");
+        TextField phoneF = new TextField(user.getPhone() != null ? user.getPhone() : "");
+        TextField schIdF = new TextField(user.getSchId() != null ? user.getSchId() : ""); schIdF.setDisable(true);
+        TextField majorF = new TextField(user.getMajor() != null ? user.getMajor() : "");
+        ComboBox<String> genderCb = new ComboBox<>(); genderCb.getItems().addAll("男","女"); genderCb.setValue(user.getGender()!=null?user.getGender():"男");
+        TextField classF = new TextField(user.getSClass() != null ? String.valueOf(user.getSClass()) : "");
+
+        DatePicker birthPicker = new DatePicker();
+        if (user.getBirthDate() != null && !user.getBirthDate().isEmpty())
+            try { birthPicker.setValue(java.time.LocalDate.parse(user.getBirthDate())); } catch (Exception ignored) {}
+        ComboBox<Integer> enrollCombo = new ComboBox<>();
+        int thisYear = java.time.Year.now().getValue();
+        for (int y = thisYear; y >= thisYear - 10; y--) enrollCombo.getItems().add(y);
+        if (user.getEnrollmentYear() != null) enrollCombo.setValue(user.getEnrollmentYear());
+        TextField idCardF = new TextField(user.getIdCard() != null ? user.getIdCard() : "");
+        TextField nativeF = new TextField(user.getNativePlace() != null ? user.getNativePlace() : "");
+        ComboBox<String> politicalCombo = new ComboBox<>();
+        politicalCombo.getItems().addAll("群众","共青团员","中共党员","其他");
+        if (user.getPoliticalStatus() != null) politicalCombo.setValue(user.getPoliticalStatus());
+        TextField addressF = new TextField(user.getAddress() != null ? user.getAddress() : "");
+        TextField contactNameF = new TextField(user.getContactName() != null ? user.getContactName() : "");
+        TextField contactPhoneF = new TextField(user.getContactPhone() != null ? user.getContactPhone() : "");
+        TextField relationF = new TextField(user.getSocialRelations() != null ? user.getSocialRelations() : "");
+
+        g.addRow(r++, new Label("姓名:"), nameF);
+        g.addRow(r++, new Label("手机号:"), phoneF);
+        g.addRow(r++, new Label("学号:"), schIdF);
+        g.addRow(r++, new Label("专业:"), majorF);
+        g.addRow(r++, new Label("性别:"), genderCb);
+        g.addRow(r++, new Label("班级:"), classF);
+        g.addRow(r++, new Label("出生日期:"), birthPicker);
+        g.addRow(r++, new Label("入学年份:"), enrollCombo);
+        g.addRow(r++, new Label("身份证号:"), idCardF);
+        g.addRow(r++, new Label("籍贯:"), nativeF);
+        g.addRow(r++, new Label("政治面貌:"), politicalCombo);
+        g.addRow(r++, new Label("家庭住址:"), addressF);
+        g.addRow(r++, new Label("紧急联系人:"), contactNameF);
+        g.addRow(r++, new Label("紧急联系人电话:"), contactPhoneF);
+        g.addRow(r++, new Label("与紧急联系人关系:"), relationF);
+
+        d.getDialogPane().setContent(new ScrollPane(g));
+        ButtonType saveBtn = new ButtonType("保存", ButtonBar.ButtonData.APPLY);
+        d.getDialogPane().getButtonTypes().addAll(saveBtn, ButtonType.CLOSE);
+        d.showAndWait().ifPresent(result -> {
+            if (result == saveBtn) {
+                String idCard = idCardF.getText().trim();
+                if (!idCard.isEmpty()) {
+                    if (!idCard.matches("\\d{17}[\\dXx]")) { showWarning("身份证号必须为18位数字"); return; }
+                }
+                String cp = contactPhoneF.getText().trim();
+                if (!cp.isEmpty()) { String pe = validatePhone(cp); if (pe != null) { showWarning("紧急联系人电话: "+pe); return; } }
+                try {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", user.getId());
+                    data.put("name", nameF.getText().trim());
+                    data.put("phone", phoneF.getText().trim());
+                    data.put("major", majorF.getText().trim());
+                    data.put("gender", genderCb.getValue());
+                    String ct = classF.getText().trim();
+                    if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
+                    if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
+                    data.put("enrollmentYear", enrollCombo.getValue());
+                    data.put("idCard", idCard);
+                    data.put("nativePlace", nativeF.getText().trim());
+                    data.put("politicalStatus", politicalCombo.getValue());
+                    data.put("address", addressF.getText().trim());
+                    data.put("contactName", contactNameF.getText().trim());
+                    data.put("contactPhone", cp);
+                    data.put("socialRelations", relationF.getText().trim());
+                    ApiClient.updateUser(data);
+                    showInfo("保存成功");
+                } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
+            }
+        });
+    }
+
+    // -- Honor Management --
+    private void showHonorManagement() { contentArea.getChildren().clear(); sectionTitle.setText("荣誉管理");
+        VBox p = new VBox(10); p.setPadding(new Insets(15));
+        Button addBtn = new Button("添加荣誉"); addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        HBox bar = new HBox(10, new Label("学号:")); TextField sidF = new TextField(); sidF.setPrefWidth(130);
+        Button searchBtn = new Button("搜索"); searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+        bar.getChildren().addAll(sidF, searchBtn, addBtn);
+        TableView<Map<String,Object>> table = new TableView<>();
+        TableColumn<Map<String,Object>,String> col1 = new TableColumn<>("学号"); col1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("sid")));
+        TableColumn<Map<String,Object>,String> col2 = new TableColumn<>("标题"); col2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
+        TableColumn<Map<String,Object>,String> col3 = new TableColumn<>("类型"); col3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("type")));
+        TableColumn<Map<String,Object>,String> col4 = new TableColumn<>("级别"); col4.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("level")));
+        TableColumn<Map<String,Object>,String> col5 = new TableColumn<>("日期"); col5.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(d.getValue().get("awardDate")!=null?d.getValue().get("awardDate").toString():""));
+        TableColumn<Map<String,Object>,Void> act = new TableColumn<>("操作"); act.setCellFactory(col -> {
+            javafx.scene.control.TableCell<Map<String,Object>,Void> cell = new javafx.scene.control.TableCell<>() {
+                private final Button del = new Button("删除");
+                { del.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"); }
+                @Override protected void updateItem(Void i, boolean e) { super.updateItem(i,e); if(e){setGraphic(null);return;}
+                    Map<String,Object> r = getTableView().getItems().get(getIndex());
+                    del.setOnAction(ev -> { if(showConfirm("确认","确定删除?")){ApiClient.deleteHonor(((Number)r.get("id")).intValue()); refreshHonor(table,sidF.getText().trim());} });
+                    setGraphic(del);
+                }
+            }; return cell;
+        });
+        table.getColumns().addAll(col1,col2,col3,col4,col5,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        Runnable load = () -> { try { PageResult<Map<String,Object>> r = ApiClient.getHonorList(1,100,sidF.getText().trim()); if(r!=null&&r.getList()!=null) table.getItems().setAll(r.getList()); } catch(Exception ex){showError(ex.getMessage());} };
+        searchBtn.setOnAction(e -> load.run()); load.run();
+        addBtn.setOnAction(e -> { Dialog<ButtonType> d = new Dialog<>(); d.setTitle("添加荣誉"); GridPane g = new GridPane(); g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(15));
+            TextField sidI=new TextField(),titleI=new TextField(),typeI=new TextField(),levelI=new TextField(),descI=new TextField(); DatePicker dateI=new DatePicker();
+            g.addRow(0,new Label("学号:"),sidI);g.addRow(1,new Label("标题:"),titleI);g.addRow(2,new Label("类型:"),typeI);g.addRow(3,new Label("级别:"),levelI);g.addRow(4,new Label("日期:"),dateI);g.addRow(5,new Label("描述:"),descI);
+            d.getDialogPane().setContent(g); d.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
+            d.showAndWait().ifPresent(r2->{if(r2==ButtonType.OK){try{Map<String,Object> m=new HashMap<>(); m.put("sid",sidI.getText().trim());m.put("title",titleI.getText().trim());m.put("type",typeI.getText().trim());m.put("level",levelI.getText().trim());m.put("awardDate",dateI.getValue()!=null?dateI.getValue().toString():"");m.put("description",descI.getText().trim()); ApiClient.addHonor(m);load.run();}catch(Exception ex){showError(ex.getMessage());}}}); });
+        p.getChildren().addAll(bar,table); contentArea.getChildren().add(p);
+    }
+    private void refreshHonor(TableView<Map<String,Object>> t, String sid) { try { PageResult<Map<String,Object>> r = ApiClient.getHonorList(1,100,sid); if(r!=null&&r.getList()!=null) t.getItems().setAll(r.getList()); } catch(Exception ignored){} }
+
+    // -- Practice Management --
+    private void showPracticeManagement() { contentArea.getChildren().clear(); sectionTitle.setText("创新实践审批");
+        VBox p = new VBox(10); p.setPadding(new Insets(15));
+        TableView<Map<String,Object>> table = new TableView<>();
+        TableColumn<Map<String,Object>,String> c1 = new TableColumn<>("学号"); c1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("sid")));
+        TableColumn<Map<String,Object>,String> c2 = new TableColumn<>("标题"); c2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
+        TableColumn<Map<String,Object>,String> c3 = new TableColumn<>("类型"); c3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("type")));
+        TableColumn<Map<String,Object>,String> c4 = new TableColumn<>("状态"); c4.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("status")));
+        TableColumn<Map<String,Object>,Void> act = new TableColumn<>("操作"); act.setCellFactory(col -> {
+            javafx.scene.control.TableCell<Map<String,Object>,Void> cell = new javafx.scene.control.TableCell<>() {
+                private final Button app = new Button("通过"); { app.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;"); }
+                private final Button rej = new Button("驳回"); { rej.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"); }
+                private final HBox bx = new HBox(5, app, rej);
+                @Override protected void updateItem(Void i, boolean e) { super.updateItem(i,e); if(e){setGraphic(null);return;}
+                    Map<String,Object> r = getTableView().getItems().get(getIndex());
+                    app.setOnAction(ev -> { Map<String,Object> d = new HashMap<>(); d.put("id",((Number)r.get("id")).longValue()); d.put("status","APPROVED"); d.put("comment",""); ApiClient.approvePractice(d); refreshPractice(table); });
+                    rej.setOnAction(ev -> { Map<String,Object> d = new HashMap<>(); d.put("id",((Number)r.get("id")).longValue()); d.put("status","REJECTED"); d.put("comment",""); ApiClient.approvePractice(d); refreshPractice(table); });
+                    setGraphic(bx);
+                }
+            }; return cell;
+        });
+        table.getColumns().addAll(c1,c2,c3,c4,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        refreshPractice(table);
+        p.getChildren().add(table); contentArea.getChildren().add(p);
+    }
+    private void refreshPractice(TableView<Map<String,Object>> t) { try { PageResult<Map<String,Object>> r = ApiClient.getPendingPractices(1,100); if(r!=null&&r.getList()!=null) t.getItems().setAll(r.getList()); } catch(Exception ignored){} }
+
+    // -- Leave Management --
+    private void showLeaveManagement() { contentArea.getChildren().clear(); sectionTitle.setText("请假审批");
+        VBox p = new VBox(10); p.setPadding(new Insets(15));
+        TableView<Map<String,Object>> table = new TableView<>();
+        TableColumn<Map<String,Object>,String> c1 = new TableColumn<>("学号"); c1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("sid")));
+        TableColumn<Map<String,Object>,String> c2 = new TableColumn<>("类型"); c2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("type")));
+        TableColumn<Map<String,Object>,String> c3 = new TableColumn<>("开始"); c3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(d.getValue().get("startDate")!=null?d.getValue().get("startDate").toString():""));
+        TableColumn<Map<String,Object>,String> c4 = new TableColumn<>("结束"); c4.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(d.getValue().get("endDate")!=null?d.getValue().get("endDate").toString():""));
+        TableColumn<Map<String,Object>,String> c5 = new TableColumn<>("状态"); c5.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("status")));
+        TableColumn<Map<String,Object>,Void> act = new TableColumn<>("操作"); act.setCellFactory(col -> {
+            javafx.scene.control.TableCell<Map<String,Object>,Void> cell = new javafx.scene.control.TableCell<>() {
+                private final Button app = new Button("通过"); { app.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;"); }
+                private final Button rej = new Button("驳回"); { rej.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"); }
+                private final HBox bx = new HBox(5, app, rej);
+                @Override protected void updateItem(Void i, boolean e) { super.updateItem(i,e); if(e){setGraphic(null);return;}
+                    Map<String,Object> r = getTableView().getItems().get(getIndex());
+                    app.setOnAction(ev -> { Map<String,Object> d = new HashMap<>(); d.put("id",((Number)r.get("id")).longValue()); d.put("status","APPROVED"); d.put("comment",""); ApiClient.approveLeave(d); refreshLeave(table); });
+                    rej.setOnAction(ev -> { Map<String,Object> d = new HashMap<>(); d.put("id",((Number)r.get("id")).longValue()); d.put("status","REJECTED"); d.put("comment",""); ApiClient.approveLeave(d); refreshLeave(table); });
+                    setGraphic(bx);
+                }
+            }; return cell;
+        });
+        table.getColumns().addAll(c1,c2,c3,c4,c5,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        refreshLeave(table);
+        p.getChildren().add(table); contentArea.getChildren().add(p);
+    }
+    private void refreshLeave(TableView<Map<String,Object>> t) { try { PageResult<Map<String,Object>> r = ApiClient.getPendingLeaves(1,100); if(r!=null&&r.getList()!=null) t.getItems().setAll(r.getList()); } catch(Exception ignored){} }
+
+    // -- Activity Management --
+    private void showActivityManagement() { contentArea.getChildren().clear(); sectionTitle.setText("活动管理");
+        VBox p = new VBox(10); p.setPadding(new Insets(15));
+        Button addBtn = new Button("发布活动"); addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        TableView<Map<String,Object>> table = new TableView<>();
+        TableColumn<Map<String,Object>,String> c1 = new TableColumn<>("标题"); c1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
+        TableColumn<Map<String,Object>,String> c2 = new TableColumn<>("地点"); c2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("location")));
+        TableColumn<Map<String,Object>,String> c3 = new TableColumn<>("日期"); c3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(d.getValue().get("date")!=null?d.getValue().get("date").toString():""));
+        TableColumn<Map<String,Object>,String> c4 = new TableColumn<>("报名/上限"); c4.setCellValueFactory(d -> { Object rc=d.getValue().get("registered_count"); Object mp=d.getValue().get("maxParticipants"); return new javafx.beans.property.SimpleStringProperty((rc!=null?rc:"0")+"/"+(mp!=null&&(Integer)mp>0?mp:"∞")); });
+        addBtn.setOnAction(e -> {
+            Dialog<ButtonType> d = new Dialog<>(); d.setTitle("发布活动"); GridPane g = new GridPane(); g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(15));
+            TextField titleI=new TextField(),locI=new TextField(),cntI=new TextField(); TextArea contentI=new TextArea(); contentI.setPrefRowCount(3); DatePicker dateI=new DatePicker();
+            g.addRow(0,new Label("标题:"),titleI);g.addRow(1,new Label("内容:"),contentI);g.addRow(2,new Label("地点:"),locI);g.addRow(3,new Label("日期:"),dateI);g.addRow(4,new Label("人数上限:"),cntI);
+            d.getDialogPane().setContent(g); d.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
+            d.showAndWait().ifPresent(r2->{if(r2==ButtonType.OK){try{Map<String,Object> m=new HashMap<>(); m.put("title",titleI.getText().trim());m.put("content",contentI.getText()!=null?contentI.getText().trim():"");m.put("location",locI.getText().trim());m.put("date",dateI.getValue()!=null?dateI.getValue().toString():"");m.put("maxParticipants",cntI.getText().trim().isEmpty()?0:Integer.parseInt(cntI.getText().trim())); ApiClient.publishActivity(m);refreshActivity(table);}catch(Exception ex){showError(ex.getMessage());}}});
+        });
+        TableColumn<Map<String,Object>,Void> act = new TableColumn<>("操作"); act.setCellFactory(col -> {
+            javafx.scene.control.TableCell<Map<String,Object>,Void> cell = new javafx.scene.control.TableCell<>() {
+                private final Button del = new Button("删除"); { del.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"); }
+                @Override protected void updateItem(Void i, boolean e) { super.updateItem(i,e); if(e){setGraphic(null);return;}
+                    Map<String,Object> r = getTableView().getItems().get(getIndex());
+                    del.setOnAction(ev -> { if(showConfirm("确认","确定删除?")){ApiClient.adminDeleteActivity(((Number)r.get("id")).intValue()); refreshActivity(table);} });
+                    setGraphic(del);
+                }
+            }; return cell;
+        });
+        table.getColumns().addAll(c1,c2,c3,c4,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        refreshActivity(table);
+        p.getChildren().addAll(addBtn,table); contentArea.getChildren().add(p);
+    }
+    private void refreshActivity(TableView<Map<String,Object>> t) { try { PageResult<Map<String,Object>> r = ApiClient.getAdminActivities(1,100); if(r!=null&&r.getList()!=null) t.getItems().setAll(r.getList()); } catch(Exception ignored){} }
+
+    /** 学期设置弹窗 */
+    private void showSemesterSettings() {
+        Dialog<ButtonType> d = new Dialog<>(); d.setTitle("学期设置");
+        GridPane g = new GridPane(); g.setHgap(10); g.setVgap(10); g.setPadding(new Insets(20));
+        TextField nameF = new TextField(); nameF.setPromptText("学期名称");
+        DatePicker dateF = new DatePicker();
+        TextField weeksF = new TextField(); weeksF.setPromptText("总周数");
+        g.add(new Label("学期名称:"),0,0); g.add(nameF,1,0);
+        g.add(new Label("第一周周一:"),0,1); g.add(dateF,1,1);
+        g.add(new Label("总周数:"),0,2); g.add(weeksF,1,2);
+        try {
+            SemesterConfig sc = ApiClient.getSemesterConfig();
+            if (sc != null) { nameF.setText(sc.getSemesterName()!=null?sc.getSemesterName():""); weeksF.setText(sc.getTotalWeeks()!=null?String.valueOf(sc.getTotalWeeks()):""); }
+        } catch (Exception ignored) {}
+        d.getDialogPane().setContent(g); d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        d.showAndWait().ifPresent(r -> { if (r == ButtonType.OK) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("semesterName", nameF.getText().trim());
+            data.put("startWeekDate", dateF.getValue()!=null?dateF.getValue().toString():"");
+            data.put("totalWeeks", Integer.parseInt(weeksF.getText().trim()));
+            try { ApiClient.saveSemesterConfig(data); showInfo("保存成功"); } catch (Exception e) { showError(e.getMessage()); }
+        }});
     }
 }

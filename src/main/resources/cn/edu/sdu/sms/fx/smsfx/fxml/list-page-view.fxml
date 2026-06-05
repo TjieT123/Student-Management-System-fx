@@ -12,7 +12,7 @@
     <!-- 顶部栏 -->
     <HBox spacing="10" alignment="CENTER_LEFT"
           style="-fx-background-color: #2c3e50; -fx-padding: 10;" prefHeight="50">
-        <Button fx:id="backButton" text="← 返回" visible="false" managed="false"
+        <Button fx:id="backButton" text="← 返回" visible="false" managed="false" 
                 style="-fx-background-color: transparent; -fx-text-fill: white;"/>
         <Label fx:id="titleLabel" text="学生管理系统"
                style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
@@ -24,6 +24,10 @@
     <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
         <VBox spacing="15" style="-fx-padding: 20;">
             <Label fx:id="pageTitleLabel" style="-fx-font-size: 22; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+            <HBox fx:id="filterBox" spacing="10" visible="false" managed="false">
+                <ComboBox fx:id="courseFilter" promptText="全部课程" prefWidth="180"/>
+                <ComboBox fx:id="statusFilter" promptText="全部状态" prefWidth="120"/>
+            </HBox>
             <VBox fx:id="cardContainer" spacing="8"/>
             <HBox fx:id="paginationBox" alignment="CENTER" spacing="15">
                 <Button fx:id="prevPageBtn" text="上一页" style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/>

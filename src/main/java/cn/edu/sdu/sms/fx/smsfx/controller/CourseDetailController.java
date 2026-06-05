@@ -19,6 +19,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,6 +95,8 @@ public class CourseDetailController extends BaseController {
                 viewStudentsBtn.setManaged(true);
                 viewStudentsBtn.setOnAction(e -> handleViewStudents());
             }
+            // Materials section for all roles
+            loadMaterials();
         } catch (Exception e) {
             showError("加载课程详情失败: " + e.getMessage());
         }
@@ -450,4 +453,63 @@ public class CourseDetailController extends BaseController {
             }
         }
     }
+
+    /** 加载课程资料 */
+    private VBox materialsBox;
+    private void loadMaterials() {
+        if (materialsBox == null) {
+            materialsBox = new VBox(5);
+            materialsBox.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 5; -fx-padding: 10;");
+            if (homeworkContainer.getParent() instanceof VBox parent) {
+                parent.getChildren().add(parent.getChildren().indexOf(moreHomeworkBtn.getParent()), materialsBox);
+            }
+        }
+        materialsBox.getChildren().clear();
+        materialsBox.getChildren().add(new Label("📎 课程资料:"));
+        String role = SessionManager.getRole();
+        try {
+            java.util.List<AttachmentItem> items = ApiClient.getCourseMaterials(courseId);
+            if (items != null) {
+                for (int i = 0; i < items.size(); i++) {
+                    AttachmentItem att = items.get(i);
+                    final int idx = i;
+                    HBox row = new HBox(8); row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.getChildren().addAll(new Label(getIcon(att.getFileName())), new Label(att.getFileName()), new Label(att.getSizeDisplay()));
+                    Button dl = new Button("下载"); dl.setStyle("-fx-font-size: 10; -fx-background-color: #3498db; -fx-text-fill: white;");
+                    dl.setOnAction(e -> downloadMaterial(att));
+                    row.getChildren().add(dl);
+                    if ("TEACHER".equals(role)) {
+                        Button del = new Button("删除"); del.setStyle("-fx-font-size: 10; -fx-background-color: #e74c3c; -fx-text-fill: white;");
+                        del.setOnAction(e -> { try { ApiClient.deleteCourseMaterial(courseId, idx); loadMaterials(); } catch (Exception ex) { showError(ex.getMessage()); } });
+                        row.getChildren().add(del);
+                    }
+                    materialsBox.getChildren().add(row);
+                }
+            }
+            if ("TEACHER".equals(role)) {
+                Button upBtn = new Button("+ 上传资料"); upBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 11;");
+                upBtn.setOnAction(e -> {
+                    javafx.stage.FileChooser fc = new javafx.stage.FileChooser(); fc.setTitle("选择文件");
+                    java.io.File f = fc.showOpenDialog(materialsBox.getScene().getWindow());
+                    if (f != null) {
+                        try {
+                            String b64 = cn.edu.sdu.sms.fx.smsfx.util.Base64Util.encodeFile(f, 5*1024*1024);
+                            ApiClient.addCourseMaterial(courseId, f.getName(), cn.edu.sdu.sms.fx.smsfx.util.Base64Util.guessMimeType(f.getName()), f.length(), b64);
+                            loadMaterials();
+                        } catch (Exception ex) { showError("上传失败: " + ex.getMessage()); }
+                    }
+                });
+                materialsBox.getChildren().add(upBtn);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void downloadMaterial(AttachmentItem att) {
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser(); fc.setTitle("保存"); fc.setInitialFileName(att.getFileName());
+        java.io.File f = fc.showSaveDialog(materialsBox.getScene().getWindow());
+        if (f != null) { try { cn.edu.sdu.sms.fx.smsfx.util.Base64Util.decodeToFile(att.getBase64(), f); showInfo("保存成功"); } catch (Exception e) { showError("保存失败"); } }
+    }
+
+    private String getIcon(String n) { if(n==null)return"📎"; String l=n.toLowerCase(); if(l.endsWith(".pdf"))return"📕"; if(l.endsWith(".doc")||l.endsWith(".docx"))return"📘"; if(l.endsWith(".xls")||l.endsWith(".xlsx"))return"📊"; if(l.endsWith(".zip")||l.endsWith(".rar"))return"📦"; return"📎"; }
+
 }
