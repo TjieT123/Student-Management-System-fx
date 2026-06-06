@@ -34,16 +34,6 @@
                 <Button fx:id="homeBtn" text="🏠 首页" maxWidth="Infinity"
                         style="-fx-background-color: transparent; -fx-text-fill: #f39c12; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
                 <Separator style="-fx-background-color: #2c3e50;"/>
-                <Button fx:id="teacherMgmtBtn" text="👨‍🏫 教师管理" maxWidth="Infinity"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button fx:id="studentMgmtBtn" text="🎓 学生管理" maxWidth="Infinity"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button fx:id="adminMgmtBtn" text="👤 管理员管理" maxWidth="Infinity"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button fx:id="courseMgmtBtn" text="📚 课程管理" maxWidth="Infinity"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button fx:id="announcementMgmtBtn" text="📢 公告管理" maxWidth="Infinity"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER-LEFT; -fx-font-size: 14; -fx-padding: 10 20;"/>
             </VBox>
         </left>
 

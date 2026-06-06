@@ -21,6 +21,7 @@ public class Student {
     private String contactName;
     private String contactPhone;
     private String socialRelations;
+    private Integer grade;
 
     public Student() {}
 
@@ -52,4 +53,6 @@ public class Student {
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
     public String getSocialRelations() { return socialRelations; }
     public void setSocialRelations(String socialRelations) { this.socialRelations = socialRelations; }
+    public Integer getGrade() { return grade; }
+    public void setGrade(Integer grade) { this.grade = grade; }
 }

@@ -45,7 +45,7 @@ public class HonorViewController extends BaseController {
                 card.setOnMouseClicked(e -> {
                     Alert a = new Alert(Alert.AlertType.INFORMATION);
                     a.setTitle("荣誉详情"); a.setHeaderText(title);
-                    a.setContentText("类型: " + (type != null ? type : "") + "\n级别: " + (level != null ? level : "")
+                    a.setContentText("比赛名称: " + (type != null ? type : "") + "\n级别: " + (level != null ? level : "")
                         + "\n日期: " + ds + "\n描述: " + (desc != null ? desc : ""));
                     a.showAndWait();
                 });

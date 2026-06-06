@@ -17,50 +17,58 @@ public class AdminHomeController extends BaseController {
     @FXML private Label sectionTitle;
     @FXML private StackPane contentArea;
     @FXML private Button homeBtn;
-    @FXML private Button teacherMgmtBtn;
-    @FXML private Button studentMgmtBtn;
-    @FXML private Button adminMgmtBtn;
-    @FXML private Button courseMgmtBtn;
-    @FXML private Button announcementMgmtBtn;
+
+    private final List<Button> allMenuButtons = new ArrayList<>();
+    private static final String BTN_BASE = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-alignment: CENTER-LEFT; -fx-padding: 8 20;";
+    private static final String BTN_HOVER = "-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-size: 13; -fx-alignment: CENTER-LEFT; -fx-padding: 8 20;";
+    private static final String BTN_ACTIVE = "-fx-background-color: #1a6fb5; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-alignment: CENTER-LEFT; -fx-padding: 8 20;";
 
     @Override
     @FXML
     public void initialize() {
         super.initialize();
-        homeBtn.setOnAction(e -> showDashboard());
-        teacherMgmtBtn.setOnAction(e -> showTeacherManagement());
-        studentMgmtBtn.setOnAction(e -> showStudentManagement());
-        adminMgmtBtn.setOnAction(e -> showAdminManagement());
-        courseMgmtBtn.setOnAction(e -> showCourseManagement());
-        announcementMgmtBtn.setOnAction(e -> showAnnouncementManagement());
+        homeBtn.setOnAction(e -> { showDashboard(); highlightButton(homeBtn); });
+        sidebar.getChildren().clear();
 
-        // 新增P1管理面板按钮
-        addSidebarButton("🏆 荣誉管理", e -> showHonorManagement());
-        addSidebarButton("💡 实践管理", e -> showPracticeManagement());
-        addSidebarButton("🏥 请假审批", e -> showLeaveManagement());
-        addSidebarButton("🎉 活动管理", e -> showActivityManagement());
+        addSectionLabel("信息管理");
+        addMenuButton("教师管理", e -> showTeacherManagement());
+        addMenuButton("学生管理", e -> showStudentManagement());
+        addMenuButton("管理员管理", e -> showAdminManagement());
 
-        // 为FXML按钮添加悬浮效果
-        for (javafx.scene.Node n : sidebar.getChildren()) {
-            if (n instanceof Button btn && btn != homeBtn) {
-                String baseStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER-LEFT; -fx-padding: 10 20;";
-                btn.setStyle(baseStyle);
-                btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER-LEFT; -fx-padding: 10 20;"));
-                btn.setOnMouseExited(e -> btn.setStyle(baseStyle));
-            }
-        }
+        addSectionLabel("教务管理");
+        addMenuButton("课程管理", e -> showCourseManagement());
+        addMenuButton("公告管理", e -> showAnnouncementManagement());
+
+        addSectionLabel("学工管理");
+        addMenuButton("🏆 荣誉管理", e -> showHonorManagement());
+        addMenuButton("💡 创新实践成果审批", e -> showPracticeManagement());
+        addMenuButton("🏥 请假审批", e -> showLeaveManagement());
+        addMenuButton("🎉 活动管理", e -> showActivityManagement());
 
         showDashboard();
     }
 
-    private void addSidebarButton(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
+    private void addSectionLabel(String text) {
+        Label lbl = new Label("  " + text);
+        lbl.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 11; -fx-padding: 10 10 2 10; -fx-font-weight: bold;");
+        lbl.setMaxWidth(Double.MAX_VALUE);
+        sidebar.getChildren().add(lbl);
+    }
+
+    private void addMenuButton(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-padding: 10 20;");
-        btn.setOnAction(handler);
-        btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-padding: 10 20;"));
-        btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-alignment: CENTER_LEFT; -fx-padding: 10 20;"));
+        btn.setStyle(BTN_BASE);
+        btn.setOnAction(e -> { handler.handle(e); highlightButton(btn); });
+        btn.setOnMouseEntered(e -> { if (!BTN_ACTIVE.equals(btn.getStyle())) btn.setStyle(BTN_HOVER); });
+        btn.setOnMouseExited(e -> { if (!BTN_ACTIVE.equals(btn.getStyle())) btn.setStyle(BTN_BASE); });
+        allMenuButtons.add(btn);
         sidebar.getChildren().add(btn);
+    }
+
+    private void highlightButton(Button active) {
+        for (Button b : allMenuButtons) b.setStyle(BTN_BASE);
+        if (active != null) active.setStyle(BTN_ACTIVE);
     }
 
     private void showDashboard() {
@@ -147,7 +155,7 @@ public class AdminHomeController extends BaseController {
         Button searchBtn = new Button("搜索");
         searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
         searchBtn.setOnAction(e -> onSearch.run());
-        Button resetBtn = new Button("重置");
+        Button resetBtn = new Button("重置搜索");
         resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
         resetBtn.setOnAction(e -> {
             idField.clear();
@@ -255,14 +263,17 @@ public class AdminHomeController extends BaseController {
                 deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
                 resetPwdBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white;");
                 detailBtn.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white;");
-                box = "STUDENT".equals(role) ? new HBox(5, detailBtn, resetPwdBtn, deleteBtn) : new HBox(5, editBtn, resetPwdBtn, deleteBtn);
+                box = new HBox(5, detailBtn, resetPwdBtn, deleteBtn);
             }
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) { setGraphic(null); return; }
                 AdminUserVO user = getTableView().getItems().get(getIndex());
-                editBtn.setOnAction(e -> showAddEditUserDialog(user, role));
-                detailBtn.setOnAction(e -> showStudentDetailDialog(user));
+                detailBtn.setOnAction(e -> {
+                    if ("STUDENT".equals(role)) showStudentDetailDialog(user,
+                        () -> loadUserPage(role, table, searchBar, pageRef, totalRef));
+                    else showUserDetailDialog(user, role);
+                });
                 deleteBtn.setOnAction(e -> {
                     if (showConfirm("删除确认", "确定要删除用户 " + user.getUsername() + " 吗？")) {
                         try {
@@ -310,6 +321,10 @@ public class AdminHomeController extends BaseController {
 
         TableView<AdminUserVO> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         table.getColumns().addAll(baseUserColumns());
         table.getColumns().add(createUserActionCol("TEACHER", table, searchBar, pageRef, totalRef));
 
@@ -360,6 +375,10 @@ public class AdminHomeController extends BaseController {
 
         TableView<AdminUserVO> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         table.getColumns().addAll(baseUserColumns());
         TableColumn<AdminUserVO, String> majorCol = new TableColumn<>("专业");
         majorCol.setCellValueFactory(new PropertyValueFactory<>("major"));
@@ -417,6 +436,10 @@ public class AdminHomeController extends BaseController {
 
         TableView<AdminUserVO> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         table.getColumns().addAll(baseUserColumns());
         table.getColumns().add(createUserActionCol("ADMIN", table, searchBar, pageRef, totalRef));
 
@@ -458,7 +481,8 @@ public class AdminHomeController extends BaseController {
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
 
         TextField usernameField = new TextField();
-        PasswordField passwordField = new PasswordField();
+        TextField passwordField = new TextField();
+        passwordField.setText("123456"); // 默认密码，明文显示
         TextField nameField = new TextField();
         TextField phoneField = new TextField();
         TextField schIdField = new TextField();
@@ -469,7 +493,7 @@ public class AdminHomeController extends BaseController {
             grid.add(new Label("密码:"), 0, row); grid.add(passwordField, 1, row++);
         }
         grid.add(new Label("姓名:"), 0, row); grid.add(nameField, 1, row++);
-        grid.add(new Label("手机号:"), 0, row); grid.add(phoneField, 1, row++);
+        grid.add(new Label("手机号(选填):"), 0, row); grid.add(phoneField, 1, row++);
         Label schIdLabel = new Label(
                 role.equals("TEACHER") ? "工号:" : role.equals("STUDENT") ? "学号:" : "工号:");
         grid.add(schIdLabel, 0, row); grid.add(schIdField, 1, row++);
@@ -479,17 +503,22 @@ public class AdminHomeController extends BaseController {
         ComboBox<String> genderCombo = new ComboBox<>();
         genderCombo.getItems().addAll("男", "女");
         TextField classField = new TextField();
+        TextField gradeField = new TextField();
+        gradeField.setPromptText("年级(1990-2050)");
         int majorRow = row;
         grid.add(new Label("专业:"), 0, row); grid.add(majorField, 1, row++);
         int genderRow = row;
         grid.add(new Label("性别:"), 0, row); grid.add(genderCombo, 1, row++);
         int classRow = row;
         grid.add(new Label("班级:"), 0, row); grid.add(classField, 1, row++);
+        int gradeRow = row;
+        grid.add(new Label("年级:"), 0, row); grid.add(gradeField, 1, row++);
 
         boolean isStudent = "STUDENT".equals(role);
         setRowVisible(grid, majorRow, isStudent);
         setRowVisible(grid, genderRow, isStudent);
         setRowVisible(grid, classRow, isStudent);
+        setRowVisible(grid, gradeRow, isStudent);
 
         if (existingUser != null) {
             usernameField.setText(existingUser.getUsername());
@@ -502,91 +531,115 @@ public class AdminHomeController extends BaseController {
                 majorField.setText(existingUser.getMajor() != null ? existingUser.getMajor() : "");
                 genderCombo.setValue(existingUser.getGender() != null ? existingUser.getGender() : "男");
                 classField.setText(existingUser.getSClass() != null ? String.valueOf(existingUser.getSClass()) : "");
+                gradeField.setText(existingUser.getGrade() != null ? String.valueOf(existingUser.getGrade()) : "");
             }
         }
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                try {
-                    // 必填字段校验
-                    String phone = phoneField.getText().trim();
-                    String nameText = nameField.getText().trim();
-                    String schIdText = schIdField.getText().trim();
-                    if (existingUser == null) {
-                        String uname = usernameField.getText().trim();
-                        String pwd = passwordField.getText();
-                        if (uname.isEmpty() || pwd.isEmpty() || nameText.isEmpty() || schIdText.isEmpty()) {
-                            showWarning("请填写所有必填字段（用户名、密码、姓名、工号/学号）"); return;
-                        }
-                        if (uname.length() < 3) { showWarning("用户名长度不能少于3位"); return; }
-                        if (pwd.length() < 6) { showWarning("密码长度不能少于6位"); return; }
-                    } else {
-                        if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
+        final boolean isStudentFinal = isStudent;
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume(); // 阻止自动关闭，校验失败时对话框保持打开
+            try {
+                // 必填字段校验
+                String phone = phoneField.getText().trim();
+                String nameText = nameField.getText().trim();
+                String schIdText = schIdField.getText().trim();
+                if (existingUser == null) {
+                    String uname = usernameField.getText().trim();
+                    String pwd = passwordField.getText();
+                    if (uname.isEmpty() || pwd.isEmpty() || nameText.isEmpty() || schIdText.isEmpty()) {
+                        showWarning("请填写所有必填字段（用户名、密码、姓名、工号/学号）"); return;
                     }
-                    // 电话校验
-                    String phoneErr = validatePhone(phone);
-                    if (phoneErr != null) { showWarning(phoneErr); return; }
-                    // 班级校验
-                    String classText = classField.getText().trim();
-                    if (isStudent) {
-                        String majorText = majorField.getText().trim();
-                        if (majorText.isEmpty() || classText.isEmpty()) {
-                            showWarning("请填写专业和班级"); return;
-                        }
-                        if (!classText.isEmpty()) {
-                            String classErr = validatePositiveInt(classText, "班级");
-                            if (classErr != null) { showWarning(classErr); return; }
-                        }
+                    if (uname.length() < 3) { showWarning("用户名长度不能少于3位"); return; }
+                    if (pwd.length() < 6) { showWarning("密码长度不能少于6位"); return; }
+                } else {
+                    if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
+                }
+                // 学号/工号校验：只能包含数字和字母
+                if (!schIdText.isEmpty() && !schIdText.matches("[a-zA-Z0-9]+")) {
+                    showWarning("学号/工号只能包含数字和字母"); return;
+                }
+                // 姓名校验：至少2个中文字符
+                if (!nameText.isEmpty() && !nameText.matches("[\\u4e00-\\u9fa5]{2,}")) {
+                    showWarning("姓名至少需要2个中文字符"); return;
+                }
+                // 电话校验
+                String phoneErr = validatePhone(phone);
+                if (phoneErr != null) { showWarning(phoneErr); return; }
+                // 班级校验
+                String classText = classField.getText().trim();
+                if (isStudentFinal) {
+                    String majorText = majorField.getText().trim();
+                    if (majorText.isEmpty() || classText.isEmpty()) {
+                        showWarning("请填写专业和班级"); return;
                     }
+                    if (!classText.isEmpty()) {
+                        String classErr = validatePositiveInt(classText, "班级");
+                        if (classErr != null) { showWarning(classErr); return; }
+                    }
+                    // 年级校验
+                    String gText = gradeField.getText().trim();
+                    if (!gText.isEmpty()) {
+                        try {
+                            int gradeVal = Integer.parseInt(gText);
+                            if (gradeVal < 1990 || gradeVal > 2050) { showWarning("年级必须在1990-2050之间"); return; }
+                        } catch (NumberFormatException ex) { showWarning("年级必须为整数"); return; }
+                    }
+                }
 
-                    if (existingUser != null) {
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("id", existingUser.getId());
-                        data.put("name", nameField.getText().trim());
-                        data.put("phone", phone);
-                        if (isStudent) {
-                            data.put("major", majorField.getText().trim());
-                            data.put("gender", genderCombo.getValue());
-                            if (!classText.isEmpty())
-                                data.put("sClass", Integer.parseInt(classText));
-                        }
-                        ApiClient.updateUser(data);
-                        showInfo("修改成功");
-                    } else if (isStudent) {
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("username", usernameField.getText().trim());
-                        data.put("password", passwordField.getText());
-                        data.put("name", nameField.getText().trim());
-                        data.put("phone", phone);
-                        data.put("sid", schIdField.getText().trim());
+                if (existingUser != null) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", existingUser.getId());
+                    data.put("name", nameField.getText().trim());
+                    data.put("phone", phone);
+                    if (isStudentFinal) {
                         data.put("major", majorField.getText().trim());
                         data.put("gender", genderCombo.getValue());
                         if (!classText.isEmpty())
-                            data.put("s_class", Integer.parseInt(classText));
-                        ApiClient.addStudentUser(data);
-                        showInfo("添加成功");
-                    } else {
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("username", usernameField.getText().trim());
-                        data.put("password", passwordField.getText());
-                        data.put("name", nameField.getText().trim());
-                        data.put("phone", phone);
-                        data.put("sch_id", schIdField.getText().trim());
-                        data.put("role", role);
-                        ApiClient.addUser(data);
-                        showInfo("添加成功");
+                            data.put("sClass", Integer.parseInt(classText));
+                        String gText = gradeField.getText().trim();
+                        if (!gText.isEmpty()) data.put("grade", Integer.parseInt(gText));
                     }
-                    switch (role) {
-                        case "TEACHER" -> refreshTeacherTable();
-                        case "STUDENT" -> refreshStudentTable();
-                        default -> refreshAdminTable();
-                    }
-                } catch (Exception e) { showError(e.getMessage()); }
-            }
+                    ApiClient.updateUser(data);
+                    showInfo("修改成功");
+                } else if (isStudentFinal) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("username", usernameField.getText().trim());
+                    data.put("password", passwordField.getText());
+                    data.put("name", nameField.getText().trim());
+                    data.put("phone", phone);
+                    data.put("sid", schIdField.getText().trim());
+                    data.put("major", majorField.getText().trim());
+                    data.put("gender", genderCombo.getValue());
+                    if (!classText.isEmpty())
+                        data.put("s_class", Integer.parseInt(classText));
+                    String gText = gradeField.getText().trim();
+                    if (!gText.isEmpty()) data.put("grade", gText);
+                    ApiClient.addStudentUser(data);
+                    showInfo("添加成功");
+                } else {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("username", usernameField.getText().trim());
+                    data.put("password", passwordField.getText());
+                    data.put("name", nameField.getText().trim());
+                    data.put("phone", phone);
+                    data.put("sch_id", schIdField.getText().trim());
+                    data.put("role", role);
+                    ApiClient.addUser(data);
+                    showInfo("添加成功");
+                }
+                switch (role) {
+                    case "TEACHER" -> refreshTeacherTable();
+                    case "STUDENT" -> refreshStudentTable();
+                    default -> refreshAdminTable();
+                }
+                dialog.setResult(ButtonType.OK);
+            } catch (Exception e) { showError(e.getMessage()); }
         });
+        dialog.showAndWait();
     }
 
     // ==================== 4. 课程管理 ====================
@@ -607,7 +660,7 @@ public class AdminHomeController extends BaseController {
         nameField.setPrefWidth(200);
         Button searchBtn = new Button("搜索");
         searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        Button resetBtn = new Button("重置");
+        Button resetBtn = new Button("重置搜索");
         resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
         Button addBtn = new Button("添加课程");
         addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
@@ -658,6 +711,10 @@ public class AdminHomeController extends BaseController {
         });
         table.getColumns().addAll(idCol, cnameCol, typeCol, credCol, addrCol, tnameCol, actionCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
 
         var pageRef = new int[]{1};
         var totalRef = new int[]{1};
@@ -723,10 +780,11 @@ public class AdminHomeController extends BaseController {
         });
         d.showAndWait().ifPresent(r->{if(r==saveBtn){
             String crText=credF.getText().trim(); if(crText.isEmpty()){showWarning("请输入学分");return;}
-            try{Double.parseDouble(crText);}catch(NumberFormatException ex){showWarning("学分必须为数字");return;}
+            double credits; try{credits=Double.parseDouble(crText);}catch(NumberFormatException ex){showWarning("学分必须为数字");return;}
+            if(credits<=0){showWarning("学分必须大于0");return;}
             try{Map<String,Object> data=new HashMap<>(); data.put("id",cRef.getId());
                 data.put("courseName",nameF.getText().trim());data.put("type","必修".equals(typeCb.getValue())?"REQUIRED":"ELECTIVE");
-                data.put("credits",Double.parseDouble(crText));
+                data.put("credits",credits);
                 data.put("detail",detailF.getText().trim());data.put("address",addrF.getText().trim());
                 if(teacherCb.getValue()!=null) data.put("teacherId",teacherCb.getValue().getSchId());
                 ApiClient.adminUpdateCourse(data);showInfo("保存成功");showCourseManagement();}
@@ -772,7 +830,9 @@ public class AdminHomeController extends BaseController {
         }
 
         int row = 0;
-        grid.add(new Label("课程ID:"), 0, row); grid.add(courseIdField, 1, row++);
+        if (existing != null) {
+            grid.add(new Label("课程ID:"), 0, row); grid.add(courseIdField, 1, row++);
+        }
         grid.add(new Label("课程名:"), 0, row); grid.add(nameField, 1, row++);
         grid.add(new Label("课程详情:"), 0, row); grid.add(detailField, 1, row++);
         grid.add(new Label("授课地点:"), 0, row); grid.add(addressField, 1, row++);
@@ -781,38 +841,28 @@ public class AdminHomeController extends BaseController {
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                // 必填校验
-                String cid = courseIdField.getText().trim();
-                String cname = nameField.getText() != null ? nameField.getText().trim() : "";
-                String caddr = addressField.getText() != null ? addressField.getText().trim() : "";
-                if (existing == null && cid.isEmpty()) { showWarning("请输入课程ID"); return; }
-                if (cname.isEmpty()) { showWarning("课程名不能为空"); return; }
-                if (caddr.isEmpty()) { showWarning("授课地点不能为空"); return; }
-
-                Map<String, Object> data = new HashMap<>();
-                if (existing != null) {
-                    data.put("id", fullCourseRef[0].getId());
-                } else {
-                    data.put("courseId", cid);
-                }
-                data.put("courseName", cname);
-                data.put("detail", detailField.getText() != null ? detailField.getText().trim() : "");
-                data.put("address", caddr);
-                if (teacherCombo.getValue() != null) data.put("teacherId", teacherCombo.getValue().getSchId());
-
-                try {
-                    if (existing != null) {
-                        ApiClient.adminUpdateCourse(data);
-                    } else {
-                        ApiClient.adminAddCourse(data);
-                    }
-                    showInfo(existing != null ? "修改成功" : "添加成功");
-                    showCourseManagement();
-                } catch (Exception e) { showError(e.getMessage()); }
-            }
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume(); // 阻止自动关闭
+            String cname = nameField.getText() != null ? nameField.getText().trim() : "";
+            String caddr = addressField.getText() != null ? addressField.getText().trim() : "";
+            if (cname.isEmpty()) { showWarning("课程名不能为空"); return; }
+            if (caddr.isEmpty()) { showWarning("授课地点不能为空"); return; }
+            Map<String, Object> data = new HashMap<>();
+            if (existing != null) data.put("id", fullCourseRef[0].getId());
+            data.put("courseName", cname);
+            data.put("detail", detailField.getText() != null ? detailField.getText().trim() : "");
+            data.put("address", caddr);
+            if (teacherCombo.getValue() != null) data.put("teacherId", teacherCombo.getValue().getSchId());
+            try {
+                if (existing != null) ApiClient.adminUpdateCourse(data);
+                else ApiClient.adminAddCourse(data);
+                showInfo(existing != null ? "修改成功" : "添加成功");
+                showCourseManagement();
+                dialog.setResult(ButtonType.OK);
+            } catch (Exception ex) { showError(ex.getMessage()); }
         });
+        dialog.showAndWait();
     }
 
     // ==================== 5. 公告管理 ====================
@@ -869,8 +919,12 @@ public class AdminHomeController extends BaseController {
                 setGraphic(box);
             }
         });
-        table.getColumns().addAll(idCol, titleCol, publisherCol, timeCol, actionCol);
+        table.getColumns().addAll(titleCol, publisherCol, timeCol, actionCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
 
         publishBtn.setOnAction(e -> showPublishAnnouncementDialog());
 
@@ -923,25 +977,27 @@ public class AdminHomeController extends BaseController {
 
         grid.add(new Label("标题:"), 0, 0); grid.add(titleField, 1, 0);
         grid.add(new Label("内容:"), 0, 1); grid.add(contentField, 1, 1);
-        grid.add(new Label("发布人姓名:"), 0, 2); grid.add(publisherNameField, 1, 2);
+        grid.add(new Label("发布者:"), 0, 2); grid.add(publisherNameField, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                String title = titleField.getText().trim();
-                String content = contentField.getText() != null ? contentField.getText().trim() : "";
-                if (title.isEmpty()) { showWarning("标题不能为空"); return; }
-                if (content.isEmpty()) { showWarning("内容不能为空"); return; }
-                try {
-                    ApiClient.publishAnnouncement(title, content,
-                            publisherNameField.getText().trim());
-                    showInfo("发布成功");
-                    refreshAnnouncementTable();
-                } catch (Exception e) { showError(e.getMessage()); }
-            }
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume();
+            String title = titleField.getText().trim();
+            String content = contentField.getText() != null ? contentField.getText().trim() : "";
+            if (title.isEmpty()) { showWarning("标题不能为空"); return; }
+            if (content.isEmpty()) { showWarning("内容不能为空"); return; }
+            try {
+                ApiClient.publishAnnouncement(title, content,
+                        publisherNameField.getText().trim());
+                showInfo("发布成功");
+                refreshAnnouncementTable();
+                dialog.setResult(ButtonType.OK);
+            } catch (Exception e) { showError(e.getMessage()); }
         });
+        dialog.showAndWait();
     }
 
     private void showAnnouncementDetailDialog(Announcement existing) {
@@ -977,7 +1033,8 @@ public class AdminHomeController extends BaseController {
     }
 
     /** 查看学生详情（含扩展字段编辑） */
-    private void showStudentDetailDialog(AdminUserVO user) {
+    private void showStudentDetailDialog(AdminUserVO user) { showStudentDetailDialog(user, null); }
+    private void showStudentDetailDialog(AdminUserVO user, Runnable onSave) {
         Dialog<ButtonType> d = new Dialog<>(); d.setTitle("学生详情 - " + user.getName()); d.setResizable(true);
         GridPane g = new GridPane(); g.setHgap(10); g.setVgap(8); g.setPadding(new Insets(15));
         int r = 0;
@@ -1035,6 +1092,7 @@ public class AdminHomeController extends BaseController {
         TextField contactNameF = new TextField(user.getContactName() != null ? user.getContactName() : "");
         TextField contactPhoneF = new TextField(user.getContactPhone() != null ? user.getContactPhone() : "");
         TextField relationF = new TextField(user.getSocialRelations() != null ? user.getSocialRelations() : "");
+        TextField gradeF = new TextField(user.getGrade() != null ? String.valueOf(user.getGrade()) : "");
 
         g.addRow(r++, new Label("姓名:"), nameF);
         g.addRow(r++, new Label("手机号:"), phoneF);
@@ -1052,8 +1110,9 @@ public class AdminHomeController extends BaseController {
         g.addRow(r++, new Label("紧急联系人:"), contactNameF);
         g.addRow(r++, new Label("紧急联系人电话:"), contactPhoneF);
         g.addRow(r++, new Label("与紧急联系人关系:"), relationF);
+        g.addRow(r++, new Label("年级:"), gradeF);
 
-        java.util.List<Control> edits = java.util.List.of(nameF,phoneF,majorF,genderCb,classF,idCardF,birthPicker,enrollCombo,nativeF,politicalCombo,addressF,contactNameF,contactPhoneF,relationF);
+        java.util.List<Control> edits = java.util.List.of(nameF,phoneF,majorF,genderCb,classF,idCardF,birthPicker,enrollCombo,nativeF,politicalCombo,addressF,contactNameF,contactPhoneF,relationF,gradeF);
         edits.forEach(c->c.setDisable(true));
         d.getDialogPane().setContent(new ScrollPane(g));
         ButtonType editBtn = new ButtonType("编辑", ButtonBar.ButtonData.OTHER);
@@ -1088,8 +1147,69 @@ public class AdminHomeController extends BaseController {
                     data.put("contactName", contactNameF.getText().trim());
                     data.put("contactPhone", cp);
                     data.put("socialRelations", relationF.getText().trim());
+                    String gText = gradeF.getText().trim();
+                    if (!gText.isEmpty()) {
+                        try {
+                            int gradeVal = Integer.parseInt(gText);
+                            if (gradeVal < 1990 || gradeVal > 2050) { showWarning("年级必须在1990-2050之间"); return; }
+                            data.put("grade", gradeVal);
+                        } catch (NumberFormatException ex) { showWarning("年级必须为整数"); return; }
+                    }
                     ApiClient.updateUser(data);
                     showInfo("保存成功");
+                    if (onSave != null) onSave.run();
+                } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
+            }
+        });
+    }
+
+    /** 教师/管理员详情（查看+编辑） */
+    private void showUserDetailDialog(AdminUserVO user, String role) {
+        String roleLabel = "TEACHER".equals(role) ? "教师" : "管理员";
+        Dialog<ButtonType> d = new Dialog<>(); d.setTitle(roleLabel + "详情 - " + user.getName()); d.setResizable(true);
+        GridPane g = new GridPane(); g.setHgap(10); g.setVgap(8); g.setPadding(new Insets(15));
+        int r = 0;
+
+        TextField nameF = new TextField(user.getName() != null ? user.getName() : "");
+        TextField phoneF = new TextField(user.getPhone() != null ? user.getPhone() : "");
+        TextField schIdF = new TextField(user.getSchId() != null ? user.getSchId() : ""); schIdF.setDisable(true);
+        TextField usernameF = new TextField(user.getUsername() != null ? user.getUsername() : ""); usernameF.setDisable(true);
+
+        g.addRow(r++, new Label("用户名:"), usernameF);
+        g.addRow(r++, new Label("姓名:"), nameF);
+        g.addRow(r++, new Label("手机号:"), phoneF);
+        Label schIdLabel = new Label("TEACHER".equals(role) ? "工号:" : "工号:");
+        g.addRow(r++, schIdLabel, schIdF);
+
+        java.util.List<Control> edits = java.util.List.of(nameF, phoneF);
+        edits.forEach(c -> c.setDisable(true));
+        d.getDialogPane().setContent(g);
+        ButtonType editBtn = new ButtonType("编辑", ButtonBar.ButtonData.OTHER);
+        ButtonType saveBtn = new ButtonType("保存", ButtonBar.ButtonData.APPLY);
+        d.getDialogPane().getButtonTypes().addAll(editBtn, saveBtn, ButtonType.CLOSE);
+        javafx.scene.Node saveNode = d.getDialogPane().lookupButton(saveBtn);
+        if(saveNode != null) saveNode.setDisable(true);
+        d.getDialogPane().lookupButton(editBtn).addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume(); edits.forEach(c -> c.setDisable(false)); if(saveNode != null) saveNode.setDisable(false);
+        });
+        d.showAndWait().ifPresent(result -> {
+            if (result == saveBtn) {
+                String nameText = nameF.getText().trim();
+                if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
+                if (!nameText.matches("[\\u4e00-\\u9fa5]{2,}")) { showWarning("姓名至少需要2个中文字符"); return; }
+                String phone = phoneF.getText().trim();
+                if (!phone.isEmpty()) { String pe = validatePhone(phone); if (pe != null) { showWarning(pe); return; } }
+                try {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", user.getId());
+                    data.put("name", nameText);
+                    data.put("phone", phone);
+                    ApiClient.updateUser(data);
+                    showInfo("保存成功");
+                    switch (role) {
+                        case "TEACHER" -> refreshTeacherTable();
+                        default -> refreshAdminTable();
+                    }
                 } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
             }
         });
@@ -1098,16 +1218,16 @@ public class AdminHomeController extends BaseController {
     // -- Honor Management --
     private void showHonorManagement() { contentArea.getChildren().clear(); sectionTitle.setText("荣誉管理");
         VBox p = new VBox(10); p.setPadding(new Insets(15));
-        Button addBtn = new Button("添加荣誉"); addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
-        TextField sidF = new TextField(); sidF.setPrefWidth(100); sidF.setPromptText("学号");
-        TextField nameF = new TextField(); nameF.setPrefWidth(100); nameF.setPromptText("姓名");
+        Button addBtn = new Button("发放荣誉"); addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        TextField nameF = new TextField(); nameF.setPrefWidth(120); nameF.setPromptText("姓名");
         Button searchBtn = new Button("搜索"); searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        HBox bar = new HBox(10, sidF, nameF, searchBtn, addBtn);
+        Button resetBtn = new Button("重置搜索"); resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        HBox bar = new HBox(10, nameF, searchBtn, resetBtn, addBtn);
         TableView<Map<String,Object>> table = new TableView<>();
         TableColumn<Map<String,Object>,String> col0 = new TableColumn<>("姓名"); col0.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("studentName")));
         TableColumn<Map<String,Object>,String> col1 = new TableColumn<>("学号"); col1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("sid")));
         TableColumn<Map<String,Object>,String> col2 = new TableColumn<>("标题"); col2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
-        TableColumn<Map<String,Object>,String> col3 = new TableColumn<>("类型"); col3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("type")));
+        TableColumn<Map<String,Object>,String> col3 = new TableColumn<>("比赛名称"); col3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("type")));
         TableColumn<Map<String,Object>,String> col4 = new TableColumn<>("级别"); col4.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("level")));
         TableColumn<Map<String,Object>,String> col5 = new TableColumn<>("日期"); col5.setCellValueFactory(d -> {
             Object dt = d.getValue().get("award_date");
@@ -1116,7 +1236,7 @@ public class AdminHomeController extends BaseController {
             catch(Exception e) { return new javafx.beans.property.SimpleStringProperty(dt.toString()); }
         });
         final int[] hp = {1}, ht = {1};
-        Runnable load = () -> refreshHonor(table,sidF.getText().trim(),nameF.getText().trim(),hp,ht);
+        Runnable load = () -> refreshHonor(table,null,nameF.getText().trim(),hp,ht);
         Button prevB = new Button("上一页"), nextB = new Button("下一页"); Label pagLab = new Label();
         HBox pag = new HBox(15, prevB, pagLab, nextB); pag.setAlignment(javafx.geometry.Pos.CENTER); pag.setPadding(new Insets(10));
         Runnable pagRefresh = () -> { load.run(); pagLab.setText("第 "+hp[0]+"/"+ht[0]+" 页"); prevB.setDisable(hp[0]<=1); nextB.setDisable(hp[0]>=ht[0]); };
@@ -1135,11 +1255,17 @@ public class AdminHomeController extends BaseController {
             }; return cell;
         });
         table.getColumns().addAll(col0,col1,col2,col3,col4,col5,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        searchBtn.setOnAction(e -> { hp[0]=1; pagRefresh.run(); }); pagRefresh.run();
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
+        searchBtn.setOnAction(e -> { hp[0]=1; pagRefresh.run(); });
+        resetBtn.setOnAction(e -> { nameF.clear(); hp[0]=1; pagRefresh.run(); });
+        pagRefresh.run();
         addBtn.setOnAction(e -> {
-            Dialog<ButtonType> d = new Dialog<>(); d.setTitle("添加荣誉"); GridPane g = new GridPane(); g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(15));
+            Dialog<ButtonType> d = new Dialog<>(); d.setTitle("发放荣誉"); GridPane g = new GridPane(); g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(15));
             TextField sidI=new TextField(),titleI=new TextField(),typeI=new TextField(),levelI=new TextField(),descI=new TextField(); DatePicker dateI=new DatePicker(); dateI.setEditable(false);
-            g.addRow(0,new Label("学号:"),sidI);g.addRow(1,new Label("标题:"),titleI);g.addRow(2,new Label("类型:"),typeI);g.addRow(3,new Label("级别:"),levelI);g.addRow(4,new Label("日期:"),dateI);g.addRow(5,new Label("描述:"),descI);
+            g.addRow(0,new Label("学号:"),sidI);g.addRow(1,new Label("标题:"),titleI);g.addRow(2,new Label("比赛名称:"),typeI);g.addRow(3,new Label("级别(选填):"),levelI);g.addRow(4,new Label("日期:"),dateI);g.addRow(5,new Label("描述:"),descI);
             d.getDialogPane().setContent(g); d.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
             d.showAndWait().ifPresent(r2->{if(r2==ButtonType.OK){
                 String sid=sidI.getText().trim(); if(sid.isEmpty()){showWarning("请输入学号");return;}
@@ -1191,7 +1317,7 @@ public class AdminHomeController extends BaseController {
         practiceStatusCb = new ComboBox<>(); practiceStatusCb.getItems().addAll("全部状态","待审批","已通过","已驳回");
         practiceStatusCb.setValue("全部状态"); practiceStatusCb.setPrefWidth(100);
         Button searchBtn = new Button("搜索"); searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        Button resetBtn = new Button("重置"); resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        Button resetBtn = new Button("重置搜索"); resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
         HBox bar = new HBox(10, practiceNameF, practiceTitleF, practiceTypeCb, practiceStatusCb, searchBtn, resetBtn);
 
         TableView<Map<String,Object>> table = new TableView<>();
@@ -1222,6 +1348,10 @@ public class AdminHomeController extends BaseController {
             }; return cell;
         });
         table.getColumns().addAll(c0,c1,c2,c3,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         refresh.run();
         p.getChildren().addAll(bar,table,pag); contentArea.getChildren().add(p);
     }
@@ -1343,7 +1473,7 @@ public class AdminHomeController extends BaseController {
         leaveStatusCb = new ComboBox<>(); leaveStatusCb.getItems().addAll("全部状态","待审批","已通过","已驳回");
         leaveStatusCb.setValue("全部状态"); leaveStatusCb.setPrefWidth(100);
         Button searchBtn = new Button("搜索"); searchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        Button resetBtn = new Button("重置"); resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        Button resetBtn = new Button("重置搜索"); resetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
         HBox bar = new HBox(10, leaveNameF, leaveTypeCb, leaveStatusCb, searchBtn, resetBtn);
 
         TableView<Map<String,Object>> table = new TableView<>();
@@ -1381,6 +1511,10 @@ public class AdminHomeController extends BaseController {
             }; return cell;
         });
         table.getColumns().addAll(c0,c1,c2,c3,c4,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         refresh.run();
         p.getChildren().addAll(bar,table,pag); contentArea.getChildren().add(p);
     }
@@ -1462,7 +1596,8 @@ public class AdminHomeController extends BaseController {
         Button addBtn = new Button("发布活动"); addBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
         activityTitleF = new TextField(); activityTitleF.setPrefWidth(150); activityTitleF.setPromptText("标题搜索");
         Button actSearchBtn = new Button("搜索"); actSearchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        HBox bar = new HBox(10, activityTitleF, actSearchBtn, addBtn);
+        Button actResetBtn = new Button("重置搜索"); actResetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        HBox bar = new HBox(10, activityTitleF, actSearchBtn, actResetBtn, addBtn);
         TableView<Map<String,Object>> table = new TableView<>();
         TableColumn<Map<String,Object>,String> c1 = new TableColumn<>("标题"); c1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
         TableColumn<Map<String,Object>,String> c2 = new TableColumn<>("地点"); c2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("location")));
@@ -1471,16 +1606,23 @@ public class AdminHomeController extends BaseController {
         final int[] ap = {1}, at = {1};
         Runnable load = () -> refreshActivity(table,ap,at);
         actSearchBtn.setOnAction(e -> { ap[0]=1; load.run(); });
+        actResetBtn.setOnAction(e -> { activityTitleF.clear(); ap[0]=1; load.run(); });
         addBtn.setOnAction(e -> {
             Dialog<ButtonType> d = new Dialog<>(); d.setTitle("发布活动"); GridPane g = new GridPane(); g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(15));
             TextField titleI=new TextField(),locI=new TextField(),cntI=new TextField(); TextArea contentI=new TextArea(); contentI.setPrefRowCount(3); DatePicker dateI=new DatePicker(); dateI.setEditable(false);
-            g.addRow(0,new Label("标题:"),titleI);g.addRow(1,new Label("内容:"),contentI);g.addRow(2,new Label("地点:"),locI);g.addRow(3,new Label("日期:"),dateI);g.addRow(4,new Label("人数上限:"),cntI);
+            ComboBox<String> hourCb = new ComboBox<>(); for(int i=0;i<24;i++) hourCb.getItems().add(String.format("%02d",i)); hourCb.setValue("00"); hourCb.setPrefWidth(60);
+            ComboBox<String> minCb = new ComboBox<>(); for(int i=0;i<60;i++) minCb.getItems().add(String.format("%02d",i)); minCb.setValue("00"); minCb.setPrefWidth(60);
+            HBox timeBox = new HBox(5, hourCb, new Label(":"), minCb);
+            g.addRow(0,new Label("标题:"),titleI);g.addRow(1,new Label("内容:"),contentI);g.addRow(2,new Label("地点:"),locI);g.addRow(3,new Label("日期:"),dateI);g.addRow(4,new Label("时间:"),timeBox);g.addRow(5,new Label("人数上限:"),cntI);
             d.getDialogPane().setContent(g); d.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
             d.showAndWait().ifPresent(r2->{if(r2==ButtonType.OK){try{
                 if(dateI.getValue()!=null && dateI.getValue().isBefore(java.time.LocalDate.now())){showWarning("活动日期不能早于今天");return;}
-                String cntText=cntI.getText().trim(); int maxP=cntText.isEmpty()?0:Integer.parseInt(cntText);
+                String cntText=cntI.getText().trim(); int maxP;
+                try { maxP = cntText.isEmpty() ? 0 : Integer.parseInt(cntText); }
+                catch (NumberFormatException ex) { showWarning("人数上限必须为正整数"); return; }
                 if(maxP<0){showWarning("人数上限不能为负数");return;} if(maxP==0){showWarning("人数上限不能为0");return;}
-                Map<String,Object> m=new HashMap<>(); m.put("title",titleI.getText().trim());m.put("content",contentI.getText()!=null?contentI.getText().trim():"");m.put("location",locI.getText().trim());m.put("date",dateI.getValue()!=null?dateI.getValue().toString():"");m.put("maxParticipants",maxP); ApiClient.publishActivity(m);load.run();}catch(Exception ex){showError(ex.getMessage());}}});
+                String dateStr = dateI.getValue()!=null ? dateI.getValue().toString()+" "+hourCb.getValue()+":"+minCb.getValue()+":00" : "";
+                Map<String,Object> m=new HashMap<>(); m.put("title",titleI.getText().trim());m.put("content",contentI.getText()!=null?contentI.getText().trim():"");m.put("location",locI.getText().trim());m.put("date",dateStr);m.put("maxParticipants",maxP); ApiClient.publishActivity(m);load.run();}catch(Exception ex){showError(ex.getMessage());}}});
         });
         TableColumn<Map<String,Object>,Void> act = new TableColumn<>("操作"); act.setCellFactory(col -> {
             javafx.scene.control.TableCell<Map<String,Object>,Void> cell = new javafx.scene.control.TableCell<>() {
@@ -1496,6 +1638,10 @@ public class AdminHomeController extends BaseController {
             }; return cell;
         });
         table.getColumns().addAll(c1,c2,c3,c4,act); table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+        table.setMinHeight(278);
+        table.setMaxHeight(278);
         Button prevB = new Button("上一页"), nextB = new Button("下一页");
         Label pagLab = new Label();
         HBox pag = new HBox(15, prevB, pagLab, nextB); pag.setAlignment(javafx.geometry.Pos.CENTER); pag.setPadding(new Insets(10));
@@ -1513,14 +1659,22 @@ public class AdminHomeController extends BaseController {
         TextField titleF = new TextField((String)act.get("title"));
         TextArea contentF = new TextArea((String)act.get("content")); contentF.setPrefRowCount(4);
         TextField locF = new TextField((String)act.get("location"));
-        DatePicker dateF = new DatePicker(); dateF.setEditable(false); dateF.setEditable(false);
+        DatePicker dateF = new DatePicker(); dateF.setEditable(false);
         try{Object dt=act.get("date");if(dt!=null)dateF.setValue(java.time.LocalDate.parse(dt.toString().substring(0,10)));}catch(Exception ignored){}
+        // Parse time from date string
+        String timeStr = "";
+        try { Object dt=act.get("date"); if(dt!=null){ String s=dt.toString(); if(s.length()>=16){ timeStr=s.substring(11,16); } } } catch(Exception ignored){}
+        String[] hm = timeStr.isEmpty() ? new String[]{"00","00"} : timeStr.split(":");
+        ComboBox<String> hourCb = new ComboBox<>(); for(int i=0;i<24;i++) hourCb.getItems().add(String.format("%02d",i)); hourCb.setValue(hm[0]); hourCb.setPrefWidth(60);
+        ComboBox<String> minCb = new ComboBox<>(); for(int i=0;i<60;i++) minCb.getItems().add(String.format("%02d",i)); minCb.setValue(hm.length>1?hm[1]:"00"); minCb.setPrefWidth(60);
+        HBox timeBox = new HBox(5, hourCb, new Label(":"), minCb);
         TextField cntF = new TextField(act.get("max_participants")!=null?String.valueOf(act.get("max_participants")):"0");
-        java.util.List<Control> edits = java.util.List.of(titleF,contentF,locF,dateF,cntF);
+        java.util.List<Control> edits = java.util.List.of(titleF,contentF,locF,dateF,hourCb,minCb,cntF);
         edits.forEach(c->c.setDisable(true));
         g.addRow(0,new Label("标题:"),titleF);g.addRow(1,new Label("内容:"),contentF);
         g.addRow(2,new Label("地点:"),locF);g.addRow(3,new Label("日期:"),dateF);
-        g.addRow(4,new Label("人数上限:"),cntF);
+        g.addRow(4,new Label("时间:"),timeBox);
+        g.addRow(5,new Label("人数上限:"),cntF);
         d.getDialogPane().setContent(g);
         ButtonType editBtn = new ButtonType("编辑",ButtonBar.ButtonData.OTHER);
         ButtonType saveBtn = new ButtonType("保存",ButtonBar.ButtonData.APPLY);
@@ -1533,9 +1687,12 @@ public class AdminHomeController extends BaseController {
         d.showAndWait().ifPresent(r->{if(r==saveBtn){
             try{
                 if(dateF.getValue()!=null && dateF.getValue().isBefore(java.time.LocalDate.now())){showWarning("活动日期不能早于今天");return;}
-                String cntText=cntF.getText().trim(); int maxP=cntText.isEmpty()?0:Integer.parseInt(cntText);
+                String cntText=cntF.getText().trim(); int maxP;
+                try { maxP = cntText.isEmpty() ? 0 : Integer.parseInt(cntText); }
+                catch (NumberFormatException ex) { showWarning("人数上限必须为正整数"); return; }
                 if(maxP<0){showWarning("人数上限不能为负数");return;} if(maxP==0){showWarning("人数上限不能为0");return;}
-                Map<String,Object> m=new HashMap<>(); m.put("id",((Number)act.get("id")).longValue()); m.put("title",titleF.getText().trim());m.put("content",contentF.getText()!=null?contentF.getText().trim():"");m.put("location",locF.getText().trim());m.put("date",dateF.getValue()!=null?dateF.getValue().toString():"");m.put("maxParticipants",maxP); ApiClient.adminUpdateActivity(m);onSave.run();}
+                String dateStr = dateF.getValue()!=null ? dateF.getValue().toString()+" "+hourCb.getValue()+":"+minCb.getValue()+":00" : "";
+                Map<String,Object> m=new HashMap<>(); m.put("id",((Number)act.get("id")).longValue()); m.put("title",titleF.getText().trim());m.put("content",contentF.getText()!=null?contentF.getText().trim():"");m.put("location",locF.getText().trim());m.put("date",dateStr);m.put("maxParticipants",maxP); ApiClient.adminUpdateActivity(m);onSave.run();}
             catch(Exception ex){showError(ex.getMessage());}
         }});
     }
