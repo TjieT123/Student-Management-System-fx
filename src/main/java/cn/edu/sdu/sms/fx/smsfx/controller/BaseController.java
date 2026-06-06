@@ -265,6 +265,21 @@ public abstract class BaseController {
     }
 
     /**
+     * 校验身份证号：18位格式 + 校验位算法。返回 null 表示通过，否则返回错误信息。
+     */
+    protected String validateIdCard(String id) {
+        if (id == null || id.isEmpty()) return null; // 允许为空
+        if (!id.matches("\\d{17}[\\dXx]")) return "身份证号必须为18位，前17位为数字，最后一位为数字或X";
+        // 校验位算法
+        int[] weights = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+        char[] chk = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
+        int sum = 0;
+        for (int i = 0; i < 17; i++) sum += (id.charAt(i) - '0') * weights[i];
+        if (Character.toUpperCase(id.charAt(17)) != chk[sum % 11]) return "身份证号校验位不正确";
+        return null;
+    }
+
+    /**
      * 校验正整数（> 0）。null/空返回 null（表示通过/不强制）
      */
     protected String validatePositiveInt(String text, String fieldName) {

@@ -5,29 +5,18 @@ import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import cn.edu.sdu.sms.fx.smsfx.util.NavigationManager;
 import cn.edu.sdu.sms.fx.smsfx.util.SessionManager;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.RowConstraints;
-
-import java.util.List;
-import java.util.Map;
 
 public class StudentHomeController extends BaseController {
 
     @FXML private Label welcomeLabel;
     @FXML private VBox announcementContainer;
     @FXML private Button moreAnnouncementsBtn;
-    @FXML private GridPane scheduleGrid;
-    @FXML private ComboBox<Integer> weekSelector;
     @FXML private VBox homeworkCardBox, courseCardBox;
     @FXML private Label homeworkCountLabel, homeworkDetailLabel, courseCountLabel;
     @FXML private HBox functionBox;
-
-    private static final String[] TIME_SLOTS = {"8:00-9:50", "10:10-12:00", "14:00-15:50", "16:10-18:00", "19:00-20:50"};
-    private static final String[] DAY_NAMES = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
     @Override @FXML
     public void initialize() {
@@ -35,91 +24,11 @@ public class StudentHomeController extends BaseController {
         User user = SessionManager.getCurrentUser();
         if (user != null) welcomeLabel.setText("欢迎你，" + user.getName() + "同学");
         loadAnnouncements();
-        setupWeekSelector();
-        loadWeeklySchedule(getCurrentWeek());
         loadHomeCards();
         setupFunctionButtons();
 
         moreAnnouncementsBtn.setOnAction(e -> NavigationManager.navigateTo("list-page-view.fxml",
             c -> ((ListPageController)c).setPageType(ListPageController.PageType.ANNOUNCEMENT, null, "STUDENT")));
-    }
-
-    private void setupWeekSelector() {
-        try {
-            SemesterConfig sc = ApiClient.getSemesterConfig();
-            if (sc != null && sc.getTotalWeeks() != null) {
-                for (int w = 1; w <= sc.getTotalWeeks(); w++) weekSelector.getItems().add(w);
-                weekSelector.setValue(getCurrentWeek());
-                weekSelector.setOnAction(e -> loadWeeklySchedule(weekSelector.getValue()));
-            }
-        } catch (Exception e) { weekSelector.setDisable(true); }
-    }
-
-    private int getCurrentWeek() {
-        try {
-            SemesterConfig sc = ApiClient.getSemesterConfig();
-            if (sc != null && sc.getStartWeekDate() != null && sc.getTotalWeeks() != null) {
-                java.time.LocalDate start = java.time.LocalDate.parse(sc.getStartWeekDate());
-                long days = java.time.temporal.ChronoUnit.DAYS.between(start, java.time.LocalDate.now());
-                int w = (int)(days / 7) + 1;
-                return Math.max(1, Math.min(w, sc.getTotalWeeks()));
-            }
-        } catch (Exception ignored) {}
-        return 1;
-    }
-
-    private void loadWeeklySchedule(int week) {
-        scheduleGrid.getChildren().clear();
-        scheduleGrid.getColumnConstraints().clear(); scheduleGrid.getRowConstraints().clear();
-        scheduleGrid.setGridLinesVisible(true);
-        // Column constraints: first col narrow, others equal
-        scheduleGrid.getColumnConstraints().add(new ColumnConstraints(70));
-        for (int i = 0; i < 7; i++) scheduleGrid.getColumnConstraints().add(new ColumnConstraints(110));
-        // Row constraints
-        scheduleGrid.getRowConstraints().add(new RowConstraints(28));
-        for (int i = 0; i < 5; i++) scheduleGrid.getRowConstraints().add(new RowConstraints(56));
-
-        scheduleGrid.add(new Label(""), 0, 0);
-        for (int d = 0; d < 7; d++) {
-            Label hdr = new Label(DAY_NAMES[d]);
-            hdr.setStyle("-fx-font-weight: bold; -fx-font-size: 13; -fx-alignment: center;"); hdr.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            scheduleGrid.add(hdr, d + 1, 0);
-        }
-        for (int s = 0; s < 5; s++) {
-            Label tl = new Label(TIME_SLOTS[s]);
-            tl.setStyle("-fx-font-size: 11; -fx-text-fill: #555; -fx-alignment: center;"); tl.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            scheduleGrid.add(tl, 0, s + 1);
-        }
-        try {
-            List<Map<String, Object>> schedule = ApiClient.getStudentSchedule(week);
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            for (Map<String, Object> course : schedule) {
-                String scheduleJson = (String) course.get("schedule");
-                if (scheduleJson == null) continue;
-                List<Map<String, Object>> slots = mapper.readValue(scheduleJson, List.class);
-                String cname = (String) course.get("courseName");
-                Object cidObj = course.get("id");
-                for (Map<String, Object> slot : slots) {
-                    int day = ((Number) slot.get("dayOfWeek")).intValue();
-                    int s = ((Number) slot.get("slot")).intValue();
-                    Label cell = new Label(truncate(cname, 8));
-                    cell.setStyle("-fx-background-color: #d4e6f1; -fx-font-size: 12; -fx-font-weight: bold; -fx-alignment: center; -fx-text-fill: #2c3e50;");
-                    cell.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-                    if (cidObj != null) { final Integer cid = ((Number) cidObj).intValue();
-                        cell.setStyle(cell.getStyle() + "-fx-cursor: hand;");
-                        cell.setOnMouseClicked(e -> NavigationManager.navigateTo("course-detail-view.fxml", ctrl -> ((CourseDetailController)ctrl).setCourseId(cid))); }
-                    scheduleGrid.add(cell, day, s);
-                }
-            }
-        } catch (Exception ignored) {}
-        for (int d = 1; d <= 7; d++) { final int day = d;
-            for (int s = 1; s <= 5; s++) { final int slot = s;
-                if (scheduleGrid.getChildren().stream().noneMatch(n -> GridPane.getColumnIndex(n)!=null && GridPane.getColumnIndex(n)==day && GridPane.getRowIndex(n)!=null && GridPane.getRowIndex(n)==slot)) {
-                    Label empty = new Label(""); empty.setStyle("-fx-background-color: #f5f5f5;"); empty.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-                    scheduleGrid.add(empty, day, slot);
-                }
-            }
-        }
     }
 
     private void loadHomeCards() {
@@ -169,8 +78,6 @@ public class StudentHomeController extends BaseController {
             functionBox.getChildren().add(card);
         }
     }
-
-    private String truncate(String s, int len) { return s == null ? "" : s.length() <= len ? s : s.substring(0, len) + "…"; }
 
     private void loadAnnouncements() {
         announcementContainer.getChildren().clear();

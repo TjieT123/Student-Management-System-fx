@@ -21,14 +21,6 @@
 
             <Label fx:id="welcomeLabel" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
 
-            <!-- 本周课程表 -->
-            <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 10;">
-                <HBox alignment="CENTER_LEFT"><Label text="📅 课程表"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <ComboBox fx:id="weekSelector" prefWidth="100" promptText="选择周"/>
-                </HBox>
-                <GridPane fx:id="scheduleGrid" hgap="1" vgap="1" style="-fx-background-color: #ddd;"/>
-            </VBox>
 
             <!-- 公告区 -->
             <VBox spacing="8" style="-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 10;">

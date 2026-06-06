@@ -151,7 +151,10 @@ public class HomeworkSubmitController extends BaseController {
                         commentLabel.setText(detail.getComment() != null ? detail.getComment() : "无评语");
                         aiSuggestionBtn.setVisible(true); aiSuggestionBtn.setManaged(true);
                         aiSuggestionBox.setVisible(false); aiSuggestionBox.setManaged(false);
-                        aiSuggestionBtn.setOnAction(e -> handleAiSuggestion(detail.getId()));
+                        aiSuggestionBtn.setOnAction(e -> {
+                            if (showConfirm("AI学习建议", "AI将读取你的提交内容，以及作业附件和提交附件中的文本、PDF、Word、Excel文件。\n其他类型的附件将被跳过。\n\n确定继续？"))
+                                handleAiSuggestion(detail.getId());
+                        });
                     }
                     // 显示已提交的附件
                     if (detail.getAttachments() != null && !detail.getAttachments().isEmpty()) {

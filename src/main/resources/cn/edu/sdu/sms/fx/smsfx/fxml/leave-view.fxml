@@ -11,12 +11,14 @@
         <TabPane>
             <Tab text="提交申请" closable="false"><VBox spacing="10" style="-fx-padding: 10;">
                 <ComboBox fx:id="leaveType" promptText="请假类型"/>
-                <DatePicker fx:id="startDate" promptText="开始日期"/>
-                <DatePicker fx:id="endDate" promptText="结束日期"/>
+                <DatePicker fx:id="startDate" editable="false" promptText="开始日期"/>
+                <DatePicker fx:id="endDate" editable="false" promptText="结束日期"/>
                 <TextArea fx:id="leaveReason" promptText="请假事由" prefRowCount="3"/>
                 <Button fx:id="submitBtn" text="提交申请" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
             </VBox></Tab>
-            <Tab text="申请记录" closable="false"><VBox fx:id="leaveList" spacing="5"/></Tab>
+            <Tab text="查看提交" closable="false"><VBox spacing="8">
+                <HBox spacing="8"><ComboBox fx:id="filterStatusCb" prefWidth="120" promptText="全部状态"/></HBox>
+                <VBox fx:id="leaveList" spacing="5"/><HBox alignment="CENTER" spacing="15"><Button fx:id="prevPageBtn" text="上一页"/><Label fx:id="pageLabel" text="第 1/1 页"/><Button fx:id="nextPageBtn" text="下一页"/></HBox></VBox></Tab>
         </TabPane>
     </VBox></ScrollPane>
 </VBox>

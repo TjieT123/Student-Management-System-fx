@@ -9,17 +9,25 @@
     </HBox>
     <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"><VBox spacing="10" style="-fx-padding: 20;">
         <TabPane>
-            <Tab text="提交记录" closable="false"><VBox spacing="10" style="-fx-padding: 10;">
+            <Tab text="提交实践" closable="false"><VBox spacing="10" style="-fx-padding: 10;">
                 <TextField fx:id="titleField" promptText="标题"/>
                 <ComboBox fx:id="typeCombo" promptText="实践类型"/>
-                <HBox spacing="10"><DatePicker fx:id="startDate" promptText="开始日期"/><DatePicker fx:id="endDate" promptText="结束日期"/></HBox>
+                <HBox spacing="10"><DatePicker fx:id="startDate" editable="false" promptText="开始日期"/><DatePicker fx:id="endDate" editable="false" promptText="结束日期"/></HBox>
                 <TextField fx:id="orgField" promptText="主办/组织单位"/>
                 <TextField fx:id="roleField" promptText="担任角色"/>
                 <TextArea fx:id="descField" promptText="详细描述" prefRowCount="3"/>
                 <TextArea fx:id="resultField" promptText="成果/收获" prefRowCount="2"/>
+                <HBox spacing="10"><Button fx:id="addAttachmentBtn" text="📎 添加附件" onAction="#handleAddAttachment" style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/><Label text="(每个文件≤5MB)"/></HBox>
+                <VBox fx:id="attachmentBox" spacing="3"/>
                 <Button fx:id="submitBtn" text="提交" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
             </VBox></Tab>
-            <Tab text="我的实践" closable="false"><VBox fx:id="practiceList" spacing="5"/></Tab>
+            <Tab text="查看提交" closable="false"><VBox spacing="8">
+                <HBox spacing="8"><TextField fx:id="searchTitleF" promptText="标题搜索" prefWidth="120"/>
+                    <ComboBox fx:id="filterTypeCb" prefWidth="100" promptText="全部类型"/>
+                    <ComboBox fx:id="filterStatusCb" prefWidth="100" promptText="全部状态"/>
+                    <Button fx:id="searchBtn" text="搜索" style="-fx-background-color: #3498db; -fx-text-fill: white;"/></HBox>
+                <VBox fx:id="practiceList" spacing="5"/>
+                <HBox alignment="CENTER" spacing="15"><Button fx:id="prevPageBtn" text="上一页"/><Label fx:id="pageLabel" text="第 1/1 页"/><Button fx:id="nextPageBtn" text="下一页"/></HBox></VBox></Tab>
         </TabPane>
     </VBox></ScrollPane>
 </VBox>

@@ -47,7 +47,7 @@ public class ScoreEntryController extends BaseController {
         try {
             java.util.List<java.util.Map<String, Object>> scores = ApiClient.getCourseScores(currentCourse.getId());
             if (scores != null) for (java.util.Map<String, Object> s : scores) {
-                Object fs = s.get("finalScore");
+                Object fs = s.get("final_score");
                 if (fs != null) existingScores.put((String) s.get("sid"), ((Number) fs).doubleValue());
             }
         } catch (Exception e) { statusLabel.setText("加载已有成绩失败: " + e.getMessage()); return; }
@@ -90,7 +90,11 @@ public class ScoreEntryController extends BaseController {
         }));
         scoreCol.setOnEditCommit(e -> {
             Double val = e.getNewValue();
-            if (val == null) return; // canceled or invalid input
+            if (val == null) {
+                showWarning("请输入0-100之间的数字，不能为字母或空");
+                e.getTableView().refresh();
+                return;
+            }
             if (val < 0 || val > 100) { showWarning("成绩必须在0-100之间"); e.getTableView().refresh(); return; }
             existingScores.put(e.getRowValue().getSid(), val);
             e.getTableView().refresh();

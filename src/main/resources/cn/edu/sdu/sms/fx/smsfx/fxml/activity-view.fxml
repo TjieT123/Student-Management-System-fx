@@ -8,6 +8,12 @@
         <Region HBox.hgrow="ALWAYS"/><Button fx:id="profileButton" text="个人中心" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
     </HBox>
     <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
-        <VBox fx:id="activityContainer" spacing="8" style="-fx-padding: 20;"/>
+        <VBox spacing="10" style="-fx-padding: 20;">
+            <TextField fx:id="searchField" promptText="搜索活动标题或地点..." style="-fx-pref-width: 400;"/>
+            <VBox fx:id="activityContainer" spacing="8"/>
+            <HBox alignment="CENTER" spacing="15">
+                <Button fx:id="prevPageBtn" text="上一页"/><Label fx:id="pageLabel" text="第 1/1 页"/><Button fx:id="nextPageBtn" text="下一页"/>
+            </HBox>
+        </VBox>
     </ScrollPane>
 </VBox>

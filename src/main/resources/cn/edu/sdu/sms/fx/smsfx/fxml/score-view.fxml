@@ -7,8 +7,17 @@
         <Button fx:id="backButton" text="← 返回" style="-fx-background-color: transparent; -fx-text-fill: white;"/><Label fx:id="titleLabel" text="成绩查看" style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;"/>
         <Region HBox.hgrow="ALWAYS"/><Button fx:id="profileButton" text="个人中心" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
     </HBox>
-    <VBox spacing="15" style="-fx-padding: 20;">
-        <Label fx:id="gpaLabel" text="GPA: -" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+    <VBox spacing="10" style="-fx-padding: 20;">
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="课程名称搜索" prefWidth="160"/>
+            <ComboBox fx:id="typeFilter" prefWidth="100"/>
+            <Button text="搜索" onAction="#onSearch" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+        </HBox>
         <VBox fx:id="scoresContainer"/>
+        <HBox alignment="CENTER" spacing="15">
+            <Button fx:id="prevPageBtn" text="上一页"/>
+            <Label fx:id="pageLabel" text="第 1/1 页"/>
+            <Button fx:id="nextPageBtn" text="下一页"/>
+        </HBox>
     </VBox>
 </VBox>

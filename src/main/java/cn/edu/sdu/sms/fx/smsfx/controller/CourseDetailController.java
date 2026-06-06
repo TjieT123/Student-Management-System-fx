@@ -228,16 +228,13 @@ public class CourseDetailController extends BaseController {
         dialog.setTitle("编辑作业");
         dialog.setResizable(true);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
+        VBox box = new VBox(10); box.setPadding(new Insets(15));
 
         TextField titleField = new TextField(hw.getTitle() != null ? hw.getTitle() : "");
         TextArea contentArea = new TextArea(fullContent);
         contentArea.setPrefRowCount(5);
 
-        // 日期选择器 + 时/分独立选择
-        DatePicker datePicker = new DatePicker();
-        datePicker.setEditable(false);
+        DatePicker datePicker = new DatePicker(); datePicker.setEditable(false);
         ComboBox<String> hourField = new ComboBox<>();
         hourField.setEditable(false); hourField.setPrefWidth(65); hourField.setVisibleRowCount(12);
         for (int h = 0; h < 24; h++) hourField.getItems().add(String.format("%02d", h));
@@ -262,12 +259,54 @@ public class CourseDetailController extends BaseController {
         HBox deadlineBox = new HBox(5, datePicker, hourField, new Label("时"), minuteField, new Label("分"));
         deadlineBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        int row = 0;
-        grid.add(new Label("标题:"), 0, row); grid.add(titleField, 1, row++);
-        grid.add(new Label("内容:"), 0, row); grid.add(contentArea, 1, row++);
-        grid.add(new Label("截止时间:"), 0, row); grid.add(deadlineBox, 1, row++);
+        // Attachment management
+        VBox attBox = new VBox(5);
+        java.util.List<cn.edu.sdu.sms.fx.smsfx.models.AttachmentItem> editAtts = new java.util.ArrayList<>();
+        try {
+            java.util.List<cn.edu.sdu.sms.fx.smsfx.models.AttachmentItem> existing = ApiClient.getHomeworkAttachments(hw.getId());
+            if (existing != null) editAtts.addAll(existing);
+        } catch (Exception ignored) {}
+        final Runnable[] refreshAtts = {null};
+        refreshAtts[0] = () -> {
+            attBox.getChildren().clear();
+            for (int i = 0; i < editAtts.size(); i++) {
+                cn.edu.sdu.sms.fx.smsfx.models.AttachmentItem ai = editAtts.get(i);
+                HBox row = new HBox(10); row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                row.getChildren().add(new Label("📎 " + ai.getFileName() + " (" + ai.getSizeDisplay() + ")"));
+                final int idx = i;
+                Button delBtn = new Button("删除");
+                delBtn.setOnAction(e -> { editAtts.remove(idx); refreshAtts[0].run(); });
+                row.getChildren().add(delBtn);
+                attBox.getChildren().add(row);
+            }
+        };
+        refreshAtts[0].run();
+        HBox addRow = new HBox(10);
+        Button addBtn = new Button("📎 添加附件");
+        addBtn.setOnAction(ev -> {
+            javafx.stage.FileChooser fc = new javafx.stage.FileChooser(); fc.setTitle("选择附件");
+            java.io.File file = fc.showOpenDialog(null);
+            if (file == null) return;
+            if (file.length() > 10 * 1024 * 1024) { showWarning("文件不能超过10MB"); return; }
+            try {
+                String b64 = cn.edu.sdu.sms.fx.smsfx.util.Base64Util.encodeFile(file);
+                cn.edu.sdu.sms.fx.smsfx.models.AttachmentItem ai = new cn.edu.sdu.sms.fx.smsfx.models.AttachmentItem();
+                ai.setFileName(file.getName());
+                ai.setFileType(cn.edu.sdu.sms.fx.smsfx.util.Base64Util.guessMimeType(file.getName()));
+                ai.setSize(file.length()); ai.setBase64(b64);
+                ApiClient.uploadHomeworkAttachment(hw.getId(), ai.getFileName(), ai.getFileType(), ai.getSize(), b64);
+                editAtts.add(ai); refreshAtts[0].run();
+            } catch (Exception ex) { showError("上传失败: " + ex.getMessage()); }
+        });
+        addRow.getChildren().addAll(addBtn, new Label("(每个文件≤10MB)"));
 
-        dialog.getDialogPane().setContent(grid);
+        box.getChildren().addAll(
+            new HBox(10, new Label("标题:"), titleField),
+            new HBox(10, new Label("内容:"), contentArea),
+            new HBox(10, new Label("截止时间:"), deadlineBox),
+            new Label("附件:"), addRow, attBox
+        );
+        dialog.getDialogPane().setContent(new ScrollPane(box));
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.showAndWait().ifPresent(result -> {
@@ -282,7 +321,6 @@ public class CourseDetailController extends BaseController {
                     String hour = hourField.getValue() != null ? hourField.getValue() : "23";
                     String minute = minuteField.getValue() != null ? minuteField.getValue() : "59";
                     String deadline = datePicker.getValue().toString() + " " + hour + ":" + minute + ":00";
-                    // 校验日期+时间整体合法 + 不早于当前时间
                     try {
                         java.time.format.DateTimeFormatter fmt =
                                 java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

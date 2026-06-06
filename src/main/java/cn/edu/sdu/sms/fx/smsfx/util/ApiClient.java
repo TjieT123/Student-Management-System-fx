@@ -497,6 +497,18 @@ public class ApiClient {
     /**
      * 教师删除作业附件
      */
+    public static List<AttachmentItem> getHomeworkAttachments(Integer homeworkId) {
+        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/teacher/homework/" + homeworkId + "/attachments"), new HashMap<>(), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        if (response.getStatus() == 401) {
+            if (tryRefreshToken()) {
+                response = UnirestRequest.getRaw(url("/api/teacher/homework/" + homeworkId + "/attachments"), new HashMap<>(), SessionManager.getToken());
+            } else { handleAuthFailure(); return null; }
+        }
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, new TypeReference<List<AttachmentItem>>() {});
+    }
+
     public static boolean deleteHomeworkAttachment(Integer homeworkId, int index) {
         HttpResponse<String> response = UnirestRequest.deleteRaw(
                 url("/api/teacher/homework/" + homeworkId + "/attachment/" + index), SessionManager.getToken());
@@ -634,9 +646,10 @@ public class ApiClient {
     /**
      * AI 判卷
      */
-    public static AiGradeResult aiGrade(Integer submitId, String homeworkTitle, String homeworkContent) {
+    public static AiGradeResult aiGrade(Integer submitId, Integer homeworkId, String homeworkTitle, String homeworkContent) {
         Map<String, Object> body = new HashMap<>();
         body.put("submitId", submitId);
+        if (homeworkId != null) body.put("homeworkId", homeworkId);
         body.put("homeworkTitle", homeworkTitle);
         body.put("homeworkContent", homeworkContent);
         HttpResponse<String> response = UnirestRequest.postRaw(
@@ -1162,42 +1175,6 @@ public class ApiClient {
         return convertData(dataNode, Student.class);
     }
 
-    // -- 课程排课 (Feature 2) --
-    public static SemesterConfig getSemesterConfig() {
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/semester"), new HashMap<>(), SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, SemesterConfig.class);
-    }
-    public static boolean saveSemesterConfig(Map<String, Object> data) {
-        HttpResponse<String> response = UnirestRequest.putRaw(url("/api/admin/semester"), data, SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        parseResponse(response.getBody());
-        return true;
-    }
-    public static List<Map<String, Object>> getStudentSchedule(int week) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("week", week);
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/student/schedule"), params, SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, new TypeReference<List<Map<String, Object>>>() {});
-    }
-    public static List<Map<String, Object>> getStudentCurrentWeekSchedule() {
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/student/schedule/current-week"), new HashMap<>(), SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, new TypeReference<List<Map<String, Object>>>() {});
-    }
-    public static List<Map<String, Object>> getTeacherSchedule(int week) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("week", week);
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/teacher/schedule"), params, SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, new TypeReference<List<Map<String, Object>>>() {});
-    }
-
     // -- 课程资料 (Feature 3) --
     public static List<AttachmentItem> getCourseMaterials(Integer courseId) {
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/course/" + courseId + "/materials"), new HashMap<>(), SessionManager.getToken());
@@ -1275,13 +1252,20 @@ public class ApiClient {
     }
 
     // -- 荣誉 (Feature 9) --
-    public static PageResult<Map<String, Object>> getHonorList(int page, int pageSize, String sid) {
+    public static PageResult<Map<String, Object>> getHonorList(int page, int pageSize, String sid, String name) {
         Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
         if (sid != null && !sid.isEmpty()) params.put("sid", sid);
+        if (name != null && !name.isEmpty()) params.put("name", name);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/honor/list"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
         return convertData(dataNode, new TypeReference<PageResult<Map<String, Object>>>() {});
+    }
+    public static Map<String, Object> getHonorDetail(Long id) {
+        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/honor/detail/" + id), new HashMap<>(), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, new TypeReference<Map<String, Object>>() {});
     }
     public static boolean addHonor(Map<String, Object> data) {
         HttpResponse<String> response = UnirestRequest.postRaw(url("/api/admin/honor/add"), data, SessionManager.getToken());
@@ -1322,8 +1306,13 @@ public class ApiClient {
         JsonNode dataNode = parseResponse(response.getBody());
         return convertData(dataNode, new TypeReference<PageResult<Map<String, Object>>>() {});
     }
-    public static PageResult<Map<String, Object>> getPendingPractices(int page, int pageSize) {
+    public static PageResult<Map<String, Object>> getPendingPractices(int page, int pageSize,
+            String name, String title, String type, String status) {
         Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
+        if (name != null && !name.isEmpty()) params.put("name", name);
+        if (title != null && !title.isEmpty()) params.put("title", title);
+        if (type != null && !type.isEmpty()) params.put("type", type);
+        if (status != null && !status.isEmpty()) params.put("status", status);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/innovation-practice/pending"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
@@ -1331,6 +1320,26 @@ public class ApiClient {
     }
     public static boolean approvePractice(Map<String, Object> data) {
         HttpResponse<String> response = UnirestRequest.postRaw(url("/api/admin/innovation-practice/approve"), data, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        parseResponse(response.getBody());
+        return true;
+    }
+    public static Map<String, Object> getPracticeDetail(Long id) {
+        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/innovation-practice/detail/" + id), new HashMap<>(), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, new TypeReference<Map<String, Object>>() {});
+    }
+    public static boolean updatePractice(Map<String, Object> data) {
+        Long id = ((Number)data.get("id")).longValue();
+        data.remove("id");
+        HttpResponse<String> response = UnirestRequest.putRaw(url("/api/student/innovation-practice/update/" + id), data, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        parseResponse(response.getBody());
+        return true;
+    }
+    public static boolean deleteMyPractice(Long id) {
+        HttpResponse<String> response = UnirestRequest.deleteRaw(url("/api/student/innovation-practice/delete/" + id), SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         parseResponse(response.getBody());
         return true;
@@ -1356,12 +1365,30 @@ public class ApiClient {
         JsonNode dataNode = parseResponse(response.getBody());
         return convertData(dataNode, new TypeReference<PageResult<Map<String, Object>>>() {});
     }
-    public static PageResult<Map<String, Object>> getPendingLeaves(int page, int pageSize) {
+    public static PageResult<Map<String, Object>> getPendingLeaves(int page, int pageSize,
+            String name, String type, String status) {
         Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
+        if (name != null && !name.isEmpty()) params.put("name", name);
+        if (type != null && !type.isEmpty()) params.put("type", type);
+        if (status != null && !status.isEmpty()) params.put("status", status);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/leave/pending"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
         return convertData(dataNode, new TypeReference<PageResult<Map<String, Object>>>() {});
+    }
+    public static Map<String, Object> getLeaveDetail(Long id) {
+        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/leave/detail/" + id), new HashMap<>(), SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        JsonNode dataNode = parseResponse(response.getBody());
+        return convertData(dataNode, new TypeReference<Map<String, Object>>() {});
+    }
+    public static boolean updateLeave(Map<String, Object> data) {
+        Long id = ((Number)data.get("id")).longValue();
+        data.remove("id");
+        HttpResponse<String> response = UnirestRequest.putRaw(url("/api/student/leave/update/" + id), data, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        parseResponse(response.getBody());
+        return true;
     }
     public static boolean approveLeave(Map<String, Object> data) {
         HttpResponse<String> response = UnirestRequest.postRaw(url("/api/admin/leave/approve"), data, SessionManager.getToken());
@@ -1371,8 +1398,9 @@ public class ApiClient {
     }
 
     // -- 日常活动 (Feature 12) --
-    public static PageResult<Map<String, Object>> getStudentActivities(int page, int pageSize) {
+    public static PageResult<Map<String, Object>> getStudentActivities(int page, int pageSize, String keyword) {
         Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
+        if (keyword != null && !keyword.isEmpty()) params.put("keyword", keyword);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/student/activity/list"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());
@@ -1390,8 +1418,9 @@ public class ApiClient {
         parseResponse(response.getBody());
         return true;
     }
-    public static PageResult<Map<String, Object>> getAdminActivities(int page, int pageSize) {
+    public static PageResult<Map<String, Object>> getAdminActivities(int page, int pageSize, String keyword) {
         Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
+        if (keyword != null && !keyword.isEmpty()) params.put("keyword", keyword);
         HttpResponse<String> response = UnirestRequest.getRaw(url("/api/admin/activity/list"), params, SessionManager.getToken());
         if (response == null) throw new ApiException(500, "网络连接失败");
         JsonNode dataNode = parseResponse(response.getBody());

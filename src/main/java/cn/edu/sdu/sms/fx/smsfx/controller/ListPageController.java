@@ -4,11 +4,12 @@ import cn.edu.sdu.sms.fx.smsfx.models.*;
 import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import cn.edu.sdu.sms.fx.smsfx.util.NavigationManager;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ public class ListPageController extends BaseController {
     private String role;
     private int currentPage = 1, totalPages = 1;
     private List<StudentHomeworkItem> allStudentHomeworks = new ArrayList<>();
+    private boolean teacherFiltersReady = false;
 
     @Override @FXML public void initialize() { super.initialize(); enableBackButton(); }
 
@@ -78,7 +80,7 @@ public class ListPageController extends BaseController {
                     if (result.getList() != null) for (Course c : result.getList()) cardContainer.getChildren().add(createCourseCard(c));
                 }
             } else if (pageType == PageType.HOMEWORK) {
-                pageTitleLabel.setText("📝 我的作业");
+                pageTitleLabel.setText("📝 作业管理");
                 if ("STUDENT".equals(role)) {
                     loadAllStudentHomeworks();
                     List<StudentHomeworkItem> filtered = applyFilters(allStudentHomeworks);
@@ -88,14 +90,16 @@ public class ListPageController extends BaseController {
                     int from = (currentPage - 1) * 10, to = Math.min(from + 10, filtered.size());
                     for (int i = from; i < to; i++) cardContainer.getChildren().add(createStudentHomeworkCard(filtered.get(i)));
                 } else {
+                    filterBox.setVisible(true); filterBox.setManaged(true);
+                    if (!teacherFiltersReady) initTeacherHomeworkFilters();
                     PageResult<Homework> all = ApiClient.getHomeworkList(1, 200);
                     if (all != null && all.getList() != null) {
-                        List<Homework> filtered = courseId != null ? all.getList().stream().filter(h -> courseId.equals(h.getCourseId())).collect(Collectors.toList()) : all.getList();
+                        List<Homework> filtered = applyTeacherFilters(all.getList());
                         totalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / 10));
-                        pageLabel.setText("第 " + currentPage + "/" + totalPages + " 页");
+                        pageLabel.setText("第 " + currentPage + "/" + totalPages + " 页（共 " + filtered.size() + " 条）");
                         prevPageBtn.setDisable(currentPage <= 1); nextPageBtn.setDisable(currentPage >= totalPages);
                         int from = (currentPage - 1) * 10, to = Math.min(from + 10, filtered.size());
-                        for (int i = from; i < to; i++) cardContainer.getChildren().add(createTeacherHomeworkCard(filtered.get(i)));
+                        for (int i = from; i < to; i++) cardContainer.getChildren().add(createTeacherHomeworkCardWithActions(filtered.get(i)));
                     }
                 }
             }
@@ -161,15 +165,122 @@ public class ListPageController extends BaseController {
         return card;
     }
 
-    private HBox createTeacherHomeworkCard(Homework hw) {
+    private HBox createTeacherHomeworkCardWithActions(Homework hw) {
         HBox card = new HBox(15); card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12; -fx-cursor: hand;");
-        card.setOnMouseClicked(e -> NavigationManager.navigateTo("homework-grading-list-view.fxml", ctrl -> ((HomeworkGradingListController)ctrl).setHomeworkId(hw.getId())));
+        card.setOnMouseClicked(e -> NavigationManager.navigateTo("homework-grading-list-view.fxml",
+            ctrl -> ((HomeworkGradingListController)ctrl).setHomeworkId(hw.getId())));
+        VBox info = new VBox(3);
         Label t = new Label(hw.getTitle()); t.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
+        String courseName = getTeacherCourseName(hw.getCourseId());
+        boolean expired = isDeadlinePassed(hw.getDeadline());
+        Label detail = new Label("课程: " + courseName + "  |  " + (expired ? "已截止" : "未截止"));
+        detail.setStyle("-fx-font-size: 11; -fx-text-fill: " + (expired ? "#e74c3c" : "#27ae60") + ";");
+        info.getChildren().addAll(t, detail);
         Region sp = new Region(); HBox.setHgrow(sp, javafx.scene.layout.Priority.ALWAYS);
-        card.getChildren().addAll(t, sp, new Label("截止: "+formatDateTime(hw.getDeadline())));
+        Button editBtn = new Button("编辑"); editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11;");
+        Button delBtn = new Button("删除"); delBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
+        editBtn.setOnAction(e -> { e.consume(); showHomeworkEditDialog(hw); });
+        delBtn.setOnAction(e -> { e.consume(); if(showConfirm("确认删除","确定删除作业《"+hw.getTitle()+"》？")){try{ApiClient.deleteHomework(hw.getId());showInfo("删除成功");loadData();}catch(Exception ex){showError(ex.getMessage());}} });
+        card.getChildren().addAll(info, sp, new Label("截止: "+formatDateTime(hw.getDeadline())), editBtn, delBtn);
         return card;
     }
+
+    private void showHomeworkEditDialog(Homework hw) {
+        try {
+            Dialog<ButtonType> d = new Dialog<>(); d.setTitle("编辑作业"); d.setResizable(true);
+            VBox box = new VBox(10); box.setPadding(new javafx.geometry.Insets(15));
+            TextField titleF=new TextField(hw.getTitle()!=null?hw.getTitle():"");
+            TextArea contentF=new TextArea(); contentF.setPrefRowCount(4);
+            try{StudentHomeworkItem detail=ApiClient.getHomeworkContent(hw.getId());if(detail!=null&&detail.getContent()!=null)contentF.setText(detail.getContent());}catch(Exception ignored){}
+            DatePicker dp=new DatePicker(); dp.setEditable(false); ComboBox<String> hh=new ComboBox<>(), mm=new ComboBox<>();
+            for(int i=0;i<24;i++)hh.getItems().add(String.format("%02d",i));
+            mm.getItems().addAll("00","30","59");
+            if(hw.getDeadline()!=null){try{String dl=hw.getDeadline().replace("T"," ");String[] parts=dl.split(" ");dp.setValue(java.time.LocalDate.parse(parts[0]));String[] tm=parts[1].split(":");hh.setValue(tm[0]);mm.setValue(tm[1]);}catch(Exception ignored){}}
+            hh.setValue("23");mm.setValue("59");
+
+            // Attachment management
+            VBox attBox = new VBox(5);
+            java.util.List<AttachmentItem> editAtts = new java.util.ArrayList<>();
+            try {
+                java.util.List<AttachmentItem> existing = ApiClient.getHomeworkAttachments(hw.getId());
+                if (existing != null) editAtts.addAll(existing);
+            } catch (Exception ignored) {}
+            final Runnable[] refreshAtts = {null};
+            refreshAtts[0] = () -> {
+                attBox.getChildren().clear();
+                for (int i = 0; i < editAtts.size(); i++) {
+                    AttachmentItem ai = editAtts.get(i);
+                    HBox row = new HBox(10); row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.getChildren().add(new Label("📎 " + ai.getFileName() + " (" + ai.getSizeDisplay() + ")"));
+                    final int idx = i;
+                    Button delBtn = new Button("删除");
+                    delBtn.setOnAction(e -> { editAtts.remove(idx); refreshAtts[0].run(); });
+                    row.getChildren().add(delBtn);
+                    attBox.getChildren().add(row);
+                }
+            };
+            refreshAtts[0].run();
+            HBox addRow = new HBox(10);
+            Button addBtn = new Button("📎 添加附件");
+            addBtn.setOnAction(ev -> {
+                javafx.stage.FileChooser fc = new javafx.stage.FileChooser(); fc.setTitle("选择附件");
+                java.io.File file = fc.showOpenDialog(null);
+                if (file == null) return;
+                if (file.length() > 10 * 1024 * 1024) { showWarning("文件不能超过10MB"); return; }
+                try {
+                    String b64 = cn.edu.sdu.sms.fx.smsfx.util.Base64Util.encodeFile(file);
+                    AttachmentItem ai = new AttachmentItem();
+                    ai.setFileName(file.getName());
+                    ai.setFileType(cn.edu.sdu.sms.fx.smsfx.util.Base64Util.guessMimeType(file.getName()));
+                    ai.setSize(file.length()); ai.setBase64(b64);
+                    ApiClient.uploadHomeworkAttachment(hw.getId(), ai.getFileName(), ai.getFileType(), ai.getSize(), b64);
+                    editAtts.add(ai); refreshAtts[0].run();
+                } catch (Exception ex) { showError("上传失败: " + ex.getMessage()); }
+            });
+            addRow.getChildren().addAll(addBtn, new Label("(每个文件≤10MB)"));
+            box.getChildren().addAll(
+                new HBox(10, new Label("标题:"), titleF),
+                new HBox(10, new Label("内容:"), contentF),
+                new HBox(10, new Label("截止日期:"), dp),
+                new HBox(10, new Label("时/分:"), new HBox(5, hh, mm)),
+                new Label("附件:"), addRow, attBox
+            );
+            d.getDialogPane().setContent(new ScrollPane(box));
+            d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            d.showAndWait().ifPresent(r->{if(r==ButtonType.OK){
+                String t=titleF.getText().trim();if(t.isEmpty()){showWarning("标题不能为空");return;}
+                String deadline=dp.getValue()+" "+hh.getValue()+":"+mm.getValue()+":00";
+                try{ApiClient.updateHomework(hw.getId(),t,contentF.getText()!=null?contentF.getText().trim():"",deadline);showInfo("修改成功");loadData();}catch(Exception ex){showError(ex.getMessage());}
+            }});
+        } catch(Exception e){showError(e.getMessage());}
+    }
+
+    private void initTeacherHomeworkFilters() {
+        teacherFiltersReady = true;  // Set flag first to break recursion
+        courseFilter.getItems().clear(); statusFilter.getItems().clear();
+        courseFilter.getItems().add("全部课程"); statusFilter.getItems().addAll("全部状态","已截止","未截止");
+        courseFilter.setValue("全部课程"); statusFilter.setValue("全部状态");
+        try{PageResult<Course> courses=ApiClient.getTeacherCourses(1,200);if(courses!=null&&courses.getList()!=null)for(Course c:courses.getList())courseFilter.getItems().add(c.getCourseName());}catch(Exception ignored){}
+        courseFilter.setOnAction(e->{currentPage=1;loadData();}); statusFilter.setOnAction(e->{currentPage=1;loadData();});
+    }
+
+    private List<Homework> applyTeacherFilters(List<Homework> list) {
+        String cf=courseFilter.getValue(), sf=statusFilter.getValue();
+        return list.stream().filter(h->{
+            if(cf!=null&&!"全部课程".equals(cf)){
+                String cn=getTeacherCourseName(h.getCourseId()); if(!cf.equals(cn)) return false;
+            }
+            if(sf!=null&&!"全部状态".equals(sf)){
+                boolean expired=isDeadlinePassed(h.getDeadline());
+                if("已截止".equals(sf)&&!expired)return false; if("未截止".equals(sf)&&expired)return false;
+            }
+            return true;
+        }).collect(Collectors.toList());
+    }
+
+    private String getTeacherCourseName(Integer cid){try{PageResult<Course> cs=ApiClient.getTeacherCourses(1,200);if(cs!=null&&cs.getList()!=null)for(Course c:cs.getList())if(c.getId().equals(cid))return c.getCourseName();}catch(Exception ignored){}return String.valueOf(cid);}
+    private boolean isDeadlinePassed(String dl){try{return java.time.LocalDateTime.now().isAfter(java.time.LocalDateTime.parse(dl.replace("T"," "),java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));}catch(Exception e){return false;}}
 
     private Label createStatusLabel(String status) {
         Label l = new Label(); if (status==null) status="UNSUBMIT";
