@@ -509,6 +509,19 @@ public class ApiClient {
         return convertData(dataNode, new TypeReference<List<AttachmentItem>>() {});
     }
 
+    public static List<Map<String, Object>> getUnsubmittedStudents(Integer homeworkId) {
+        HttpResponse<String> response = UnirestRequest.getRaw(
+                url("/api/teacher/homework/" + homeworkId + "/unsubmitted"), null, SessionManager.getToken());
+        if (response == null) throw new ApiException(500, "网络连接失败");
+        JsonNode dataNode = parseResponse(response.getBody());
+        if (dataNode == null) throw new ApiException(500, "响应格式异常");
+        try {
+            com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>> typeRef =
+                new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {};
+            return mapper.readValue(mapper.treeAsTokens(dataNode), typeRef);
+        } catch (Exception e) { throw new ApiException(500, "解析失败: " + e.getMessage()); }
+    }
+
     public static boolean deleteHomeworkAttachment(Integer homeworkId, int index) {
         HttpResponse<String> response = UnirestRequest.deleteRaw(
                 url("/api/teacher/homework/" + homeworkId + "/attachment/" + index), SessionManager.getToken());

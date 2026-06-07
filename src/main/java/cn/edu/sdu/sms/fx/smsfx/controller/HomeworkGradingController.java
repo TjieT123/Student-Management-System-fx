@@ -97,8 +97,13 @@ public class HomeworkGradingController extends BaseController {
                 String ht = "", hc = "";
                 PageResult<Homework> hwList = ApiClient.getHomeworkList(1, 100);
                 if (hwList != null && hwList.getList() != null) for (Homework hw : hwList.getList())
-                    if (hwId == hw.getId().intValue()) { ht = hw.getTitle() != null ? hw.getTitle() : ""; hc = hw.getContent() != null ? hw.getContent() : ht; break; }
+                    if (hwId == hw.getId().intValue()) { ht = hw.getTitle() != null ? hw.getTitle() : ""; break; }
                 if (ht.isEmpty()) { Platform.runLater(() -> { showError("无法获取作业标题"); aiGradeBtn.setDisable(false); aiGradeBtn.setText("AI判卷"); aiStatusLabel.setVisible(false); aiStatusLabel.setManaged(false); }); return; }
+                // 通过详情接口获取完整作业内容（列表接口不含content字段）
+                try {
+                    StudentHomeworkItem detail = ApiClient.getHomeworkContent(hwId);
+                    if (detail != null && detail.getContent() != null) hc = detail.getContent();
+                } catch (Exception ignored) {}
                 AiGradeResult result = ApiClient.aiGrade(sId, hwId, ht, hc);
                 Platform.runLater(() -> {
                     if (result != null) {

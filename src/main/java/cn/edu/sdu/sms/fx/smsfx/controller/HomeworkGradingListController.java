@@ -98,8 +98,62 @@ public class HomeworkGradingListController extends BaseController {
             HBox pb=new HBox(pie);pb.setAlignment(javafx.geometry.Pos.CENTER);
             c.getChildren().addAll(cards,new Separator(),pb,new Separator(),dist);}
         else c.getChildren().addAll(cards,new Separator(),dist);
+        // 查看未提交名单按钮
+        if (unsub > 0) {
+            Button viewUnsubBtn = new Button("查看未提交名单（" + unsub + " 人）");
+            viewUnsubBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+            viewUnsubBtn.setOnAction(e -> {
+                try {
+                    List<Map<String, Object>> list = ApiClient.getUnsubmittedStudents(homeworkId);
+                    showUnsubmittedDialog(list);
+                } catch (Exception ex) { showError("加载未提交名单失败: " + ex.getMessage()); }
+            });
+            c.getChildren().add(viewUnsubBtn);
+        }
         d.getDialogPane().setContent(c);d.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);d.showAndWait();
     }
     private VBox createStatCard(String l,String v,String clr){VBox b=new VBox(5);b.setAlignment(javafx.geometry.Pos.CENTER);b.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);");b.setPrefWidth(130);b.getChildren().addAll(new Label(v){{setStyle("-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: "+clr+";");}},new Label(l){{setStyle("-fx-font-size: 13; -fx-text-fill: #7f8c8d;");}});return b;}
     private HBox createDistBar(String l,int cnt,int t,String clr){HBox b=new HBox(10);b.setAlignment(javafx.geometry.Pos.CENTER_LEFT);Label nl=new Label(l);nl.setPrefWidth(140);nl.setStyle("-fx-font-size: 13; -fx-text-fill: #555;");HBox bc=new HBox();bc.setPrefHeight(22);HBox.setHgrow(bc,Priority.ALWAYS);double r=t>0?(double)cnt/t:0;Region f=new Region();f.setStyle("-fx-background-color: "+clr+"; -fx-background-radius: 3 0 0 3;");f.setPrefHeight(22);f.prefWidthProperty().bind(bc.widthProperty().multiply(r));Region g=new Region();g.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 0 3 3 0;");g.setPrefHeight(22);HBox.setHgrow(g,Priority.ALWAYS);bc.getChildren().addAll(f,g);b.getChildren().addAll(nl,bc,new Label(cnt+" 人"){{setPrefWidth(50);setStyle("-fx-font-size: 13; -fx-text-fill: "+clr+"; -fx-font-weight: bold;");}});return b;}
+
+    private void showUnsubmittedDialog(List<Map<String, Object>> unsubmitted) {
+        Dialog<ButtonType> d = new Dialog<>(); d.setTitle("未提交名单"); d.setResizable(true);
+        d.setHeaderText("未提交学生（共 " + unsubmitted.size() + " 人）");
+        int pageSize = 10;
+        int totalPages = Math.max(1, (int) Math.ceil((double) unsubmitted.size() / pageSize));
+        int[] cp = {1};
+
+        TableView<Map<String, Object>> table = new TableView<>();
+        TableColumn<Map<String, Object>, String> sidCol = new TableColumn<>("学号");
+        sidCol.setCellValueFactory(d2 -> new javafx.beans.property.SimpleStringProperty((String)d2.getValue().get("sid")));
+        TableColumn<Map<String, Object>, String> nameCol = new TableColumn<>("姓名");
+        nameCol.setCellValueFactory(d2 -> new javafx.beans.property.SimpleStringProperty((String)d2.getValue().get("name")));
+        TableColumn<Map<String, Object>, String> majorCol = new TableColumn<>("专业");
+        majorCol.setCellValueFactory(d2 -> new javafx.beans.property.SimpleStringProperty((String)d2.getValue().get("major")));
+        TableColumn<Map<String, Object>, String> classCol = new TableColumn<>("班级");
+        classCol.setCellValueFactory(d2 -> new javafx.beans.property.SimpleStringProperty(d2.getValue().get("s_class") != null ? String.valueOf(d2.getValue().get("s_class")) : ""));
+        table.getColumns().addAll(sidCol, nameCol, majorCol, classCol);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
+
+        Runnable load = () -> {
+            int from = (cp[0] - 1) * pageSize;
+            int to = Math.min(from + pageSize, unsubmitted.size());
+            table.setItems(FXCollections.observableArrayList(unsubmitted.subList(from, to)));
+        };
+        load.run();
+
+        HBox pag = new HBox(10); pag.setAlignment(javafx.geometry.Pos.CENTER);
+        Button prev = new Button("上一页"); Button next = new Button("下一页");
+        Label pl = new Label("第 " + cp[0] + "/" + totalPages + " 页");
+        prev.setDisable(true); next.setDisable(totalPages <= 1);
+        Runnable refreshPag = () -> { load.run(); pl.setText("第 " + cp[0] + "/" + totalPages + " 页"); prev.setDisable(cp[0] <= 1); next.setDisable(cp[0] >= totalPages); };
+        prev.setOnAction(e -> { if (cp[0] > 1) { cp[0]--; refreshPag.run(); } });
+        next.setOnAction(e -> { if (cp[0] < totalPages) { cp[0]++; refreshPag.run(); } });
+        pag.getChildren().addAll(prev, pl, next);
+
+        VBox content = new VBox(10, table, pag); content.setPadding(new Insets(10));
+        d.getDialogPane().setContent(content); d.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        d.showAndWait();
+    }
 }

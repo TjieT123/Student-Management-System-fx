@@ -80,7 +80,7 @@ public class ListPageController extends BaseController {
                     if (result.getList() != null) for (Course c : result.getList()) cardContainer.getChildren().add(createCourseCard(c));
                 }
             } else if (pageType == PageType.HOMEWORK) {
-                pageTitleLabel.setText("📝 作业管理");
+                pageTitleLabel.setText("📝 作业列表");
                 if ("STUDENT".equals(role)) {
                     loadAllStudentHomeworks();
                     List<StudentHomeworkItem> filtered = applyFilters(allStudentHomeworks);
@@ -154,9 +154,14 @@ public class ListPageController extends BaseController {
         HBox card = new HBox(15); card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12; -fx-cursor: hand;");
         card.setOnMouseClicked(e -> NavigationManager.navigateTo("homework-submit-view.fxml", ctrl -> ((HomeworkSubmitController)ctrl).setHomeworkId(hw.getId(), null)));
+        VBox info = new VBox(3);
         Label t = new Label(hw.getTitle()); t.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
+        String courseName = hw.getCourseName() != null ? hw.getCourseName() : "";
+        Label detail = new Label("课程: " + courseName);
+        detail.setStyle("-fx-font-size: 11; -fx-text-fill: #7f8c8d;");
+        info.getChildren().addAll(t, detail);
         Region sp = new Region(); HBox.setHgrow(sp, javafx.scene.layout.Priority.ALWAYS);
-        card.getChildren().addAll(t, sp, new Label("截止: " + formatDateTime(hw.getDeadline())));
+        card.getChildren().addAll(info, sp, new Label("截止: " + formatDateTime(hw.getDeadline())));
         if ("GRADED".equals(hw.getStatus()) && hw.getScore() != null) {
             Label s = new Label(hw.getScore()+"分"); s.setStyle("-fx-text-fill: "+(hw.getScore()>=60?"#27ae60":"#e74c3c")+"; -fx-font-weight: bold; -fx-font-size: 13;");
             card.getChildren().add(s);
@@ -215,7 +220,12 @@ public class ListPageController extends BaseController {
                     row.getChildren().add(new Label("📎 " + ai.getFileName() + " (" + ai.getSizeDisplay() + ")"));
                     final int idx = i;
                     Button delBtn = new Button("删除");
-                    delBtn.setOnAction(e -> { editAtts.remove(idx); refreshAtts[0].run(); });
+                    delBtn.setOnAction(e -> {
+                        int curIdx = editAtts.indexOf(ai);
+                        if (curIdx < 0) return;
+                        try { ApiClient.deleteHomeworkAttachment(hw.getId(), curIdx); } catch (Exception ex) { showError("删除附件失败: " + ex.getMessage()); return; }
+                        editAtts.remove(curIdx); refreshAtts[0].run();
+                    });
                     row.getChildren().add(delBtn);
                     attBox.getChildren().add(row);
                 }
@@ -261,7 +271,18 @@ public class ListPageController extends BaseController {
         courseFilter.getItems().clear(); statusFilter.getItems().clear();
         courseFilter.getItems().add("全部课程"); statusFilter.getItems().addAll("全部状态","已截止","未截止");
         courseFilter.setValue("全部课程"); statusFilter.setValue("全部状态");
-        try{PageResult<Course> courses=ApiClient.getTeacherCourses(1,200);if(courses!=null&&courses.getList()!=null)for(Course c:courses.getList())courseFilter.getItems().add(c.getCourseName());}catch(Exception ignored){}
+        try {
+            PageResult<Course> courses=ApiClient.getTeacherCourses(1,200);
+            if(courses!=null&&courses.getList()!=null) {
+                for(Course c:courses.getList()) courseFilter.getItems().add(c.getCourseName());
+                // 从课程详情点进来时，默认筛选当前课程
+                if (courseId != null) {
+                    for (Course c : courses.getList()) {
+                        if (courseId.equals(c.getId())) { courseFilter.setValue(c.getCourseName()); break; }
+                    }
+                }
+            }
+        } catch(Exception ignored){}
         courseFilter.setOnAction(e->{currentPage=1;loadData();}); statusFilter.setOnAction(e->{currentPage=1;loadData();});
     }
 

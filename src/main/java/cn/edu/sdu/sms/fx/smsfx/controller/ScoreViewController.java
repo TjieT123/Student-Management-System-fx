@@ -31,6 +31,11 @@ public class ScoreViewController extends BaseController {
     }
 
     @FXML private void onSearch() { currentPage = 1; renderScores(); }
+    @FXML private void onReset() {
+        if (searchField != null) searchField.clear();
+        if (typeFilter != null) typeFilter.setValue("全部类型");
+        currentPage = 1; renderScores();
+    }
 
     private void loadScores() {
         try {

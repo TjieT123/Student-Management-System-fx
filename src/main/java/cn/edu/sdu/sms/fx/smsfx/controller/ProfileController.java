@@ -10,7 +10,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-import java.time.Year;
 import java.util.*;
 
 public class ProfileController extends BaseController {
@@ -24,11 +23,10 @@ public class ProfileController extends BaseController {
 
     private DatePicker birthPicker;
     private Label birthLockHint;
-    private ComboBox<Integer> enrollCombo;
     private TextField idCardField, nativeField, addressField, contactNameField, contactPhoneField, relationField;
     private ComboBox<String> politicalCombo;
     private Label gradeLabel;
-    private TextField gradeField;
+    private ComboBox<Integer> gradeField;
     private Button saveBtn;
 
     @Override @FXML public void initialize() {
@@ -83,7 +81,7 @@ public class ProfileController extends BaseController {
     }
 
     // Labels for display mode
-    private Label birthLabel, enrollLabel, idCardLabel, nativeLabel, politicalLabel, addressLabel, contactNameLabel, contactPhoneLabel, relationLabel;
+    private Label birthLabel, idCardLabel, nativeLabel, politicalLabel, addressLabel, contactNameLabel, contactPhoneLabel, relationLabel;
 
     private void loadExtendedInfo() {
         try {
@@ -92,7 +90,6 @@ public class ProfileController extends BaseController {
 
             // Display labels
             birthLabel = new Label(fmtDate(sp.getBirthDate())); birthLabel.setStyle("-fx-text-fill: #555;");
-            enrollLabel = valLabel(sp.getEnrollmentYear() != null ? String.valueOf(sp.getEnrollmentYear()) : null);
             idCardLabel = valLabel(sp.getIdCard());
             nativeLabel = valLabel(sp.getNativePlace());
             politicalLabel = valLabel(sp.getPoliticalStatus());
@@ -108,12 +105,6 @@ public class ProfileController extends BaseController {
             if (sp.getBirthDate() != null && !sp.getBirthDate().isEmpty())
                 try { birthPicker.setValue(java.time.LocalDate.parse(sp.getBirthDate())); } catch (Exception ignored) {}
             birthPicker.setVisible(false); birthPicker.setManaged(false);
-
-            enrollCombo = new ComboBox<>();
-            int ty = Year.now().getValue();
-            for (int y = ty; y >= ty - 10; y--) enrollCombo.getItems().add(y);
-            if (sp.getEnrollmentYear() != null) enrollCombo.setValue(sp.getEnrollmentYear());
-            enrollCombo.setVisible(false); enrollCombo.setManaged(false);
 
             idCardField = new TextField(sp.getIdCard() != null ? sp.getIdCard() : ""); idCardField.setVisible(false); idCardField.setManaged(false);
             // Auto-fill and lock birth date from ID card (only when in edit mode)
@@ -143,17 +134,21 @@ public class ProfileController extends BaseController {
             contactNameField = new TextField(sp.getContactName() != null ? sp.getContactName() : ""); contactNameField.setVisible(false); contactNameField.setManaged(false);
             contactPhoneField = new TextField(sp.getContactPhone() != null ? sp.getContactPhone() : ""); contactPhoneField.setVisible(false); contactPhoneField.setManaged(false);
             relationField = new TextField(sp.getSocialRelations() != null ? sp.getSocialRelations() : ""); relationField.setVisible(false); relationField.setManaged(false);
-            gradeField = new TextField(sp.getGrade() != null ? String.valueOf(sp.getGrade()) : ""); gradeField.setVisible(false); gradeField.setManaged(false);
+            gradeField = new ComboBox<>();
+            for (int y = 2030; y >= 1930; y--) gradeField.getItems().add(y);
+            if (sp.getGrade() != null) gradeField.setValue(sp.getGrade());
+            gradeField.setVisibleRowCount(15);
+            gradeField.setVisible(false); gradeField.setManaged(false);
 
             birthLockHint = new Label("已锁定，从身份证号解析出出生日期");
             birthLockHint.setStyle("-fx-font-size: 10; -fx-text-fill: #e67e22;"); birthLockHint.setVisible(false);
             VBox birthBox = new VBox(2, birthPicker, birthLockHint);
 
-            List<Label> labels = List.of(idCardLabel, birthLabel, enrollLabel, gradeLabel, nativeLabel, politicalLabel, addressLabel, contactNameLabel, contactPhoneLabel, relationLabel);
-            List<Node> inputs = List.of(idCardField, birthBox, enrollCombo, gradeField, nativeField, politicalCombo, addressField, contactNameField, contactPhoneField, relationField);
+            List<Label> labels = List.of(idCardLabel, birthLabel, gradeLabel, nativeLabel, politicalLabel, addressLabel, contactNameLabel, contactPhoneLabel, relationLabel);
+            List<Node> inputs = List.of(idCardField, birthBox, gradeField, nativeField, politicalCombo, addressField, contactNameField, contactPhoneField, relationField);
 
             GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(8);
-            String[] names = {"身份证号:", "出生日期:", "入学年份:", "年级:", "籍贯:", "政治面貌:", "家庭住址:", "紧急联系人:", "紧急联系人电话:", "与紧急联系人关系:"};
+            String[] names = {"身份证号:", "出生日期:", "年级:", "籍贯:", "政治面貌:", "家庭住址:", "紧急联系人:", "紧急联系人电话:", "与紧急联系人关系:"};
             for (int i = 0; i < names.length; i++)
                 grid.addRow(i, new Label(names[i]), labels.get(i), inputs.get(i));
 
@@ -186,34 +181,28 @@ public class ProfileController extends BaseController {
                 if (addressField.getText().trim().isEmpty()) { showWarning("家庭住址不能为空"); return; }
                 if (contactNameField.getText().trim().isEmpty()) { showWarning("紧急联系人不能为空"); return; }
                 if (cp.isEmpty()) { showWarning("紧急联系人电话不能为空"); return; }
-                String gText = gradeField.getText().trim();
-                if (gText.isEmpty()) { showWarning("年级不能为空"); return; }
-                try {
-                    int gv = Integer.parseInt(gText);
-                    if (gv < 1990 || gv > 2050) { showWarning("年级必须在1990-2050之间"); return; }
-                } catch (NumberFormatException ex) { showWarning("年级必须为整数"); return; }
+                if (gradeField.getValue() == null) { showWarning("请选择年级"); return; }
                 try {
                     User user = SessionManager.getCurrentUser();
                     Map<String, Object> data = new HashMap<>();
                     data.put("id", user.getId()); data.put("phone", phone);
                     if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
-                    data.put("enrollmentYear", enrollCombo.getValue()); data.put("idCard", idCard);
+                    data.put("idCard", idCard);
                     data.put("nativePlace", nativeField.getText().trim()); data.put("politicalStatus", politicalCombo.getValue());
                     data.put("address", addressField.getText().trim()); data.put("contactName", contactNameField.getText().trim());
                     data.put("contactPhone", cp); data.put("socialRelations", relationField.getText().trim());
-                    data.put("grade", Integer.parseInt(gText));
+                    data.put("grade", gradeField.getValue());
                     ApiClient.updateUser(data);
                     user.setPhone(phone); phoneLabel.setText(phone);
                     phoneLabel.setVisible(true); phoneLabel.setManaged(true);
                     phoneEditField.setVisible(false); phoneEditField.setManaged(false);
                     // Update labels with new values
                     birthLabel.setText(fmtDate(birthPicker.getValue() != null ? birthPicker.getValue().toString() : null));
-                    enrollLabel.setText(valText(enrollCombo.getValue() != null ? String.valueOf(enrollCombo.getValue()) : null));
                     idCardLabel.setText(valText(idCard)); nativeLabel.setText(valText(nativeField.getText().trim()));
                     politicalLabel.setText(valText(politicalCombo.getValue())); addressLabel.setText(valText(addressField.getText().trim()));
                     contactNameLabel.setText(valText(contactNameField.getText().trim())); contactPhoneLabel.setText(valText(cp));
                     relationLabel.setText(valText(relationField.getText().trim()));
-                    gradeLabel.setText(valText(gText));
+                    gradeLabel.setText(valText(gradeField.getValue() != null ? String.valueOf(gradeField.getValue()) : null));
                     labels.forEach(l -> { l.setVisible(true); l.setManaged(true); });
                     inputs.forEach(c -> { c.setVisible(false); c.setManaged(false); c.setDisable(false); });
                     birthPicker.setVisible(false); birthPicker.setManaged(false); birthPicker.setStyle(null); birthPicker.setDisable(false);

@@ -384,8 +384,10 @@ public class AdminHomeController extends BaseController {
         majorCol.setCellValueFactory(new PropertyValueFactory<>("major"));
         TableColumn<AdminUserVO, String> genderCol = new TableColumn<>("性别");
         genderCol.setCellValueFactory(new PropertyValueFactory<>("gender"));
+        genderCol.setPrefWidth(50); genderCol.setMaxWidth(60);
         TableColumn<AdminUserVO, Integer> classCol = new TableColumn<>("班级");
         classCol.setCellValueFactory(new PropertyValueFactory<>("sClass"));
+        classCol.setPrefWidth(50); classCol.setMaxWidth(60);
         table.getColumns().addAll(majorCol, genderCol, classCol);
         table.getColumns().add(createUserActionCol("STUDENT", table, searchBar, pageRef, totalRef));
 
@@ -503,8 +505,11 @@ public class AdminHomeController extends BaseController {
         ComboBox<String> genderCombo = new ComboBox<>();
         genderCombo.getItems().addAll("男", "女");
         TextField classField = new TextField();
-        TextField gradeField = new TextField();
-        gradeField.setPromptText("年级(1990-2050)");
+        ComboBox<Integer> gradeField = new ComboBox<>();
+        for (int y = 2030; y >= 1930; y--) gradeField.getItems().add(y);
+        int curYr = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        gradeField.setValue(curYr >= 1930 && curYr <= 2030 ? curYr : 2030);
+        gradeField.setVisibleRowCount(15);
         int majorRow = row;
         grid.add(new Label("专业:"), 0, row); grid.add(majorField, 1, row++);
         int genderRow = row;
@@ -531,7 +536,7 @@ public class AdminHomeController extends BaseController {
                 majorField.setText(existingUser.getMajor() != null ? existingUser.getMajor() : "");
                 genderCombo.setValue(existingUser.getGender() != null ? existingUser.getGender() : "男");
                 classField.setText(existingUser.getSClass() != null ? String.valueOf(existingUser.getSClass()) : "");
-                gradeField.setText(existingUser.getGrade() != null ? String.valueOf(existingUser.getGrade()) : "");
+                if (existingUser.getGrade() != null) gradeField.setValue(existingUser.getGrade());
             }
         }
 
@@ -555,16 +560,14 @@ public class AdminHomeController extends BaseController {
                     }
                     if (uname.length() < 3) { showWarning("用户名长度不能少于3位"); return; }
                     if (pwd.length() < 6) { showWarning("密码长度不能少于6位"); return; }
+                    if (!uname.matches("[\\x00-\\x7F]+")) { showWarning("用户名只能包含英文、数字和特殊字符，不能包含中文"); return; }
+                    if (!pwd.matches("[\\x00-\\x7F]+")) { showWarning("密码只能包含英文、数字和特殊字符，不能包含中文"); return; }
                 } else {
                     if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
                 }
                 // 学号/工号校验：只能包含数字和字母
                 if (!schIdText.isEmpty() && !schIdText.matches("[a-zA-Z0-9]+")) {
                     showWarning("学号/工号只能包含数字和字母"); return;
-                }
-                // 姓名校验：至少2个中文字符
-                if (!nameText.isEmpty() && !nameText.matches("[\\u4e00-\\u9fa5]{2,}")) {
-                    showWarning("姓名至少需要2个中文字符"); return;
                 }
                 // 电话校验
                 String phoneErr = validatePhone(phone);
@@ -580,14 +583,6 @@ public class AdminHomeController extends BaseController {
                         String classErr = validatePositiveInt(classText, "班级");
                         if (classErr != null) { showWarning(classErr); return; }
                     }
-                    // 年级校验
-                    String gText = gradeField.getText().trim();
-                    if (!gText.isEmpty()) {
-                        try {
-                            int gradeVal = Integer.parseInt(gText);
-                            if (gradeVal < 1990 || gradeVal > 2050) { showWarning("年级必须在1990-2050之间"); return; }
-                        } catch (NumberFormatException ex) { showWarning("年级必须为整数"); return; }
-                    }
                 }
 
                 if (existingUser != null) {
@@ -600,8 +595,7 @@ public class AdminHomeController extends BaseController {
                         data.put("gender", genderCombo.getValue());
                         if (!classText.isEmpty())
                             data.put("sClass", Integer.parseInt(classText));
-                        String gText = gradeField.getText().trim();
-                        if (!gText.isEmpty()) data.put("grade", Integer.parseInt(gText));
+                        if (gradeField.getValue() != null) data.put("grade", gradeField.getValue());
                     }
                     ApiClient.updateUser(data);
                     showInfo("修改成功");
@@ -616,8 +610,7 @@ public class AdminHomeController extends BaseController {
                     data.put("gender", genderCombo.getValue());
                     if (!classText.isEmpty())
                         data.put("s_class", Integer.parseInt(classText));
-                    String gText = gradeField.getText().trim();
-                    if (!gText.isEmpty()) data.put("grade", gText);
+                    if (gradeField.getValue() != null) data.put("grade", String.valueOf(gradeField.getValue()));
                     ApiClient.addStudentUser(data);
                     showInfo("添加成功");
                 } else {
@@ -1080,10 +1073,6 @@ public class AdminHomeController extends BaseController {
             birthHint.setText("已从身份证号解析出生日期");
         }
 
-        ComboBox<Integer> enrollCombo = new ComboBox<>();
-        int thisYear = java.time.Year.now().getValue();
-        for (int y = thisYear; y >= thisYear - 10; y--) enrollCombo.getItems().add(y);
-        if (user.getEnrollmentYear() != null) enrollCombo.setValue(user.getEnrollmentYear());
         TextField nativeF = new TextField(user.getNativePlace() != null ? user.getNativePlace() : "");
         ComboBox<String> politicalCombo = new ComboBox<>();
         politicalCombo.getItems().addAll("群众","共青团员","中共党员","其他");
@@ -1092,7 +1081,10 @@ public class AdminHomeController extends BaseController {
         TextField contactNameF = new TextField(user.getContactName() != null ? user.getContactName() : "");
         TextField contactPhoneF = new TextField(user.getContactPhone() != null ? user.getContactPhone() : "");
         TextField relationF = new TextField(user.getSocialRelations() != null ? user.getSocialRelations() : "");
-        TextField gradeF = new TextField(user.getGrade() != null ? String.valueOf(user.getGrade()) : "");
+        ComboBox<Integer> gradeF = new ComboBox<>();
+        for (int y = 2030; y >= 1930; y--) gradeF.getItems().add(y);
+        if (user.getGrade() != null) gradeF.setValue(user.getGrade());
+        gradeF.setVisibleRowCount(15);
 
         g.addRow(r++, new Label("姓名:"), nameF);
         g.addRow(r++, new Label("手机号:"), phoneF);
@@ -1103,7 +1095,6 @@ public class AdminHomeController extends BaseController {
         g.addRow(r++, new Label("身份证号:"), idCardF);
         VBox birthBox = new VBox(2, birthPicker, birthHint);
         g.addRow(r++, new Label("出生日期:"), birthBox);
-        g.addRow(r++, new Label("入学年份:"), enrollCombo);
         g.addRow(r++, new Label("籍贯:"), nativeF);
         g.addRow(r++, new Label("政治面貌:"), politicalCombo);
         g.addRow(r++, new Label("家庭住址:"), addressF);
@@ -1112,7 +1103,7 @@ public class AdminHomeController extends BaseController {
         g.addRow(r++, new Label("与紧急联系人关系:"), relationF);
         g.addRow(r++, new Label("年级:"), gradeF);
 
-        java.util.List<Control> edits = java.util.List.of(nameF,phoneF,majorF,genderCb,classF,idCardF,birthPicker,enrollCombo,nativeF,politicalCombo,addressF,contactNameF,contactPhoneF,relationF,gradeF);
+        java.util.List<Control> edits = java.util.List.of(nameF,phoneF,majorF,genderCb,classF,idCardF,birthPicker,nativeF,politicalCombo,addressF,contactNameF,contactPhoneF,relationF,gradeF);
         edits.forEach(c->c.setDisable(true));
         d.getDialogPane().setContent(new ScrollPane(g));
         ButtonType editBtn = new ButtonType("编辑", ButtonBar.ButtonData.OTHER);
@@ -1137,9 +1128,14 @@ public class AdminHomeController extends BaseController {
                     data.put("major", majorF.getText().trim());
                     data.put("gender", genderCb.getValue());
                     String ct = classF.getText().trim();
-                    if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
+                    if (!ct.isEmpty()) {
+                        try {
+                            int cv = Integer.parseInt(ct);
+                            if (cv <= 0) { showWarning("班级必须为大于0的正整数"); return; }
+                            data.put("sClass", cv);
+                        } catch (NumberFormatException ex) { showWarning("班级必须为大于0的正整数"); return; }
+                    }
                     if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
-                    data.put("enrollmentYear", enrollCombo.getValue());
                     data.put("idCard", idCard);
                     data.put("nativePlace", nativeF.getText().trim());
                     data.put("politicalStatus", politicalCombo.getValue());
@@ -1147,14 +1143,7 @@ public class AdminHomeController extends BaseController {
                     data.put("contactName", contactNameF.getText().trim());
                     data.put("contactPhone", cp);
                     data.put("socialRelations", relationF.getText().trim());
-                    String gText = gradeF.getText().trim();
-                    if (!gText.isEmpty()) {
-                        try {
-                            int gradeVal = Integer.parseInt(gText);
-                            if (gradeVal < 1990 || gradeVal > 2050) { showWarning("年级必须在1990-2050之间"); return; }
-                            data.put("grade", gradeVal);
-                        } catch (NumberFormatException ex) { showWarning("年级必须为整数"); return; }
-                    }
+                    if (gradeF.getValue() != null) data.put("grade", gradeF.getValue());
                     ApiClient.updateUser(data);
                     showInfo("保存成功");
                     if (onSave != null) onSave.run();
@@ -1196,7 +1185,6 @@ public class AdminHomeController extends BaseController {
             if (result == saveBtn) {
                 String nameText = nameF.getText().trim();
                 if (nameText.isEmpty()) { showWarning("姓名不能为空"); return; }
-                if (!nameText.matches("[\\u4e00-\\u9fa5]{2,}")) { showWarning("姓名至少需要2个中文字符"); return; }
                 String phone = phoneF.getText().trim();
                 if (!phone.isEmpty()) { String pe = validatePhone(phone); if (pe != null) { showWarning(pe); return; } }
                 try {

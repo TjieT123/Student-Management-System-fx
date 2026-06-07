@@ -275,7 +275,12 @@ public class CourseDetailController extends BaseController {
                 row.getChildren().add(new Label("📎 " + ai.getFileName() + " (" + ai.getSizeDisplay() + ")"));
                 final int idx = i;
                 Button delBtn = new Button("删除");
-                delBtn.setOnAction(e -> { editAtts.remove(idx); refreshAtts[0].run(); });
+                delBtn.setOnAction(e -> {
+                    int currentIdx = editAtts.indexOf(ai);
+                    if (currentIdx < 0) return;
+                    try { ApiClient.deleteHomeworkAttachment(hw.getId(), currentIdx); } catch (Exception ex) { showError("删除失败: " + ex.getMessage()); return; }
+                    editAtts.remove(currentIdx); refreshAtts[0].run();
+                });
                 row.getChildren().add(delBtn);
                 attBox.getChildren().add(row);
             }
@@ -378,6 +383,10 @@ public class CourseDetailController extends BaseController {
             dialog.setHeaderText(currentCourse.getCourseName() + " — 选课学生（共 " + students.size() + " 人）");
             dialog.setResizable(true);
 
+            int pageSize = 10;
+            int totalPages = Math.max(1, (int) Math.ceil((double) students.size() / pageSize));
+            int[] currentPage = {1};
+
             TableView<Student> table = new TableView<>();
             TableColumn<Student, String> sidCol = new TableColumn<>("学号");
             sidCol.setCellValueFactory(new PropertyValueFactory<>("sid"));
@@ -389,14 +398,34 @@ public class CourseDetailController extends BaseController {
             genderCol.setCellValueFactory(new PropertyValueFactory<>("gender"));
             TableColumn<Student, Integer> classCol = new TableColumn<>("班级");
             classCol.setCellValueFactory(new PropertyValueFactory<>("sClass"));
-
             table.getColumns().addAll(sidCol, nameCol, majorCol, genderCol, classCol);
-            table.setItems(FXCollections.observableArrayList(students));
             table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-            table.setPrefHeight(400);
-            table.setPrefWidth(600);
+            table.setFixedCellSize(25);
+            table.setPrefHeight(278);
 
-            VBox content = new VBox(10, table);
+            Runnable loadPage = () -> {
+                int from = (currentPage[0] - 1) * pageSize;
+                int to = Math.min(from + pageSize, students.size());
+                table.setItems(FXCollections.observableArrayList(students.subList(from, to)));
+            };
+            loadPage.run();
+
+            HBox pagination = new HBox(10);
+            pagination.setAlignment(javafx.geometry.Pos.CENTER);
+            Button prevBtn = new Button("上一页"); prevBtn.setDisable(true);
+            Button nextBtn = new Button("下一页"); nextBtn.setDisable(totalPages <= 1);
+            Label pageLabel = new Label("第 " + currentPage[0] + "/" + totalPages + " 页");
+            Runnable refreshPag = () -> {
+                loadPage.run();
+                pageLabel.setText("第 " + currentPage[0] + "/" + totalPages + " 页");
+                prevBtn.setDisable(currentPage[0] <= 1);
+                nextBtn.setDisable(currentPage[0] >= totalPages);
+            };
+            prevBtn.setOnAction(e -> { if (currentPage[0] > 1) { currentPage[0]--; refreshPag.run(); } });
+            nextBtn.setOnAction(e -> { if (currentPage[0] < totalPages) { currentPage[0]++; refreshPag.run(); } });
+            pagination.getChildren().addAll(prevBtn, pageLabel, nextBtn);
+
+            VBox content = new VBox(10, table, pagination);
             content.setPadding(new Insets(10));
             dialog.getDialogPane().setContent(content);
             dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);

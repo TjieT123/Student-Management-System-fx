@@ -91,6 +91,13 @@ public class InnovationPracticeController extends BaseController {
         }
     }
 
+    @FXML private void onReset() {
+        if (searchTitleF != null) searchTitleF.clear();
+        if (filterTypeCb != null) filterTypeCb.setValue("全部类型");
+        if (filterStatusCb != null) filterStatusCb.setValue("全部状态");
+        currentPage = 1; renderPractices();
+    }
+
     private void handleSubmit() {
         String title = titleField.getText().trim();
         if (title.isEmpty()) { showWarning("请输入标题"); return; }
@@ -146,6 +153,9 @@ public class InnovationPracticeController extends BaseController {
 
     private void renderPractices() {
         practiceList.getChildren().clear();
+        Label hint = new Label("💡 提示：点击「待审批」或「已驳回」的卡片可编辑后重新提交");
+        hint.setStyle("-fx-font-size: 12; -fx-text-fill: #95a5a6; -fx-padding: 0 0 8 0;");
+        practiceList.getChildren().add(hint);
         List<Map<String, Object>> filtered = getFiltered();
         totalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / 10));
         pageLabel.setText("第 " + currentPage + "/" + totalPages + " 页（共 " + filtered.size() + " 条）");

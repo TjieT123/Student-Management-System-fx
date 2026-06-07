@@ -5,10 +5,8 @@ import cn.edu.sdu.sms.fx.smsfx.util.ApiClient;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.util.converter.DoubleStringConverter;
 
 import java.util.*;
 
@@ -22,13 +20,13 @@ public class ScoreEntryController extends BaseController {
     private Course currentCourse;
     private List<Student> allStudents = new ArrayList<>();
     private Map<String, Double> existingScores = new HashMap<>();
-    private int currentPage = 1, pageSize = 15, totalPages = 1;
+    private int currentPage = 1, pageSize = 10, totalPages = 1;
 
     @Override @FXML public void initialize() {
         super.initialize(); enableBackButton();
         loadTeacherCourses();
-        loadBtn.setOnAction(e -> loadStudents());
-        courseSelector.setOnAction(e -> loadStudents());
+        if (loadBtn != null) { loadBtn.setVisible(false); loadBtn.setManaged(false); }
+        courseSelector.setOnAction(e -> { if (courseSelector.getValue() != null) loadStudents(); });
     }
 
     private void loadTeacherCourses() {
@@ -78,33 +76,48 @@ public class ScoreEntryController extends BaseController {
             Double sc = existingScores.get(d.getValue().getSid());
             return new javafx.beans.property.SimpleDoubleProperty(sc != null ? sc : 0).asObject();
         });
-        scoreCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter() {
-            @Override public Double fromString(String s) {
-                if (s == null || s.trim().isEmpty()) return null;
-                try { return Double.parseDouble(s.trim()); }
-                catch (NumberFormatException e) { return null; }
+        scoreCol.setCellFactory(col -> new javafx.scene.control.TableCell<Student, Double>() {
+            private final TextField textField = new TextField();
+            {
+                textField.setOnAction(e -> commitEditFromField());
+                textField.focusedProperty().addListener((obs, old, focused) -> { if (!focused) commitEditFromField(); });
             }
-            @Override public String toString(Double v) {
-                return v == null ? "" : String.valueOf(v.intValue());
+            private void commitEditFromField() {
+                String s = textField.getText().trim();
+                Student st = getTableView().getItems().get(getIndex());
+                if (s.isEmpty()) { existingScores.remove(st.getSid()); commitEdit(0.0); return; }
+                try {
+                    double v = Double.parseDouble(s);
+                    if (v < 0 || v > 100) { showWarning("成绩必须在0-100之间"); textField.setText(""); return; }
+                    existingScores.put(st.getSid(), v);
+                    commitEdit(v); // 提交编辑并更新 item，避免新旧值重叠显示
+                } catch (NumberFormatException ex) {
+                    showWarning("请输入0-100之间的数字");
+                    textField.setText("");
+                }
             }
-        }));
-        scoreCol.setOnEditCommit(e -> {
-            Double val = e.getNewValue();
-            if (val == null) {
-                showWarning("请输入0-100之间的数字，不能为字母或空");
-                e.getTableView().refresh();
-                return;
+            @Override protected void updateItem(Double val, boolean empty) {
+                super.updateItem(val, empty);
+                if (empty || getTableView() == null) { setGraphic(null); setText(null); return; }
+                if (isEditing()) { textField.setText(val != null ? String.valueOf(val.intValue()) : ""); setGraphic(textField); setText(null); }
+                else { setGraphic(null); setText(val != null ? String.valueOf(val.intValue()) : ""); }
             }
-            if (val < 0 || val > 100) { showWarning("成绩必须在0-100之间"); e.getTableView().refresh(); return; }
-            existingScores.put(e.getRowValue().getSid(), val);
-            e.getTableView().refresh();
+            @Override public void startEdit() {
+                super.startEdit();
+                Student st = getTableView().getItems().get(getIndex());
+                Double cur = existingScores.get(st.getSid());
+                textField.setText(cur != null ? String.valueOf(cur.intValue()) : "");
+                setGraphic(textField); setText(null);
+            }
+            @Override public void cancelEdit() { super.cancelEdit(); setGraphic(null); setText(getItem() != null ? String.valueOf(getItem().intValue()) : ""); }
         });
         scoreCol.setPrefWidth(100);
         table.getColumns().addAll(sidCol, nameCol, majorCol, classCol, scoreCol);
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(25);
+        table.setPrefHeight(278);
         table.getItems().addAll(pageStudents);
-        table.setPrefHeight(500);
         contentArea.getChildren().add(table);
 
         // Pagination
@@ -125,6 +138,7 @@ public class ScoreEntryController extends BaseController {
 
     private void saveScores() {
         if (currentCourse == null) return;
+        // 自定义 cell 已在输入时实时更新 existingScores，无需额外处理
         try {
             List<Map<String, Object>> data = new ArrayList<>();
             for (Map.Entry<String, Double> e : existingScores.entrySet()) {

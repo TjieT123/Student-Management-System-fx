@@ -9,8 +9,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
-import java.time.Year;
-
 /**
  * 注册对话框控制器
  */
@@ -76,8 +74,13 @@ public class RegisterController {
         classField.setPromptText("班级");
 
         Label gradeLabel = new Label("年级:");
-        TextField gradeField = new TextField();
-        gradeField.setPromptText("年级");
+        ComboBox<Integer> gradeField = new ComboBox<>();
+        // 一次性添加101个年份 (2030~1930)
+        Integer[] years = new Integer[101];
+        for (int i = 0; i <= 100; i++) years[i] = 2030 - i;
+        gradeField.getItems().addAll(years);
+        gradeField.setValue(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR));
+        gradeField.setVisibleRowCount(20);
 
         Label idCardLabel = new Label("身份证号:");
         TextField idCardField = new TextField();
@@ -109,12 +112,6 @@ public class RegisterController {
                 birthHint.setVisible(false);
             }
         });
-
-        Label enrollLabel = new Label("入学年份:");
-        ComboBox<Integer> enrollCombo = new ComboBox<>();
-        int thisYear = Year.now().getValue();
-        for (int y = thisYear; y >= thisYear - 10; y--) enrollCombo.getItems().add(y);
-        enrollCombo.setValue(thisYear);
 
         Label nativeLabel = new Label("籍贯:");
         TextField nativeField = new TextField();
@@ -154,8 +151,6 @@ public class RegisterController {
         grid.add(idCardLabel, 0, row); grid.add(idCardField, 1, row++);
         int birthRow = row;
         grid.add(birthLabel, 0, row); grid.add(birthBox, 1, row++);
-        int enrollRow = row;
-        grid.add(enrollLabel, 0, row); grid.add(enrollCombo, 1, row++);
         int nativeRow = row;
         grid.add(nativeLabel, 0, row); grid.add(nativeField, 1, row++);
         int politicalRow = row;
@@ -171,7 +166,7 @@ public class RegisterController {
 
         // 所有学生字段的行索引数组
         int[] studentRows = {majorRow, genderRow, classRow, gradeRow,
-                idCardRow, birthRow, enrollRow, nativeRow, politicalRow,
+                idCardRow, birthRow, nativeRow, politicalRow,
                 addressRow, contactNameRow, contactPhoneRow, relationRow};
 
         // 角色切换
@@ -182,11 +177,8 @@ public class RegisterController {
             schIdField.setPromptText(isStudent ? "学号" : "工号");
         });
 
-        // 包装在 ScrollPane 中
-        ScrollPane scrollPane = new ScrollPane(grid);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setPrefViewportHeight(550);
-        dialog.getDialogPane().setContent(scrollPane);
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setMinHeight(650);
         Platform.runLater(usernameField::requestFocus);
 
         // ========== 注册按钮 ==========
@@ -211,6 +203,17 @@ public class RegisterController {
                 showAlert(Alert.AlertType.WARNING, "提示", "密码长度不能少于6位");
                 return;
             }
+            // 用户名和密码不能包含中文
+            String unameText = usernameField.getText().trim();
+            String pwdText = passwordField.getText();
+            if (!unameText.matches("[\\x00-\\x7F]+")) {
+                showAlert(Alert.AlertType.WARNING, "提示", "用户名只能包含英文、数字和特殊字符，不能包含中文");
+                return;
+            }
+            if (!pwdText.matches("[\\x00-\\x7F]+")) {
+                showAlert(Alert.AlertType.WARNING, "提示", "密码只能包含英文、数字和特殊字符，不能包含中文");
+                return;
+            }
             if (!passwordField.getText().equals(confirmPasswordField.getText())) {
                 showAlert(Alert.AlertType.WARNING, "提示", "两次输入的密码不一致");
                 return;
@@ -223,12 +226,7 @@ public class RegisterController {
                 return;
             }
 
-            // 姓名校验
             String nameText = nameField.getText().trim();
-            if (!nameText.matches("[\\u4e00-\\u9fa5]{2,}")) {
-                showAlert(Alert.AlertType.WARNING, "提示", "姓名至少需要2个中文字符");
-                return;
-            }
 
             // 电话校验（选填）
             String phone = phoneField.getText().trim();
@@ -258,16 +256,9 @@ public class RegisterController {
                     showAlert(Alert.AlertType.WARNING, "提示", "班级格式不正确，请输入正整数"); return;
                 }
 
-                // 年级校验
-                String gradeText = gradeField.getText().trim();
-                if (gradeText.isEmpty()) { showAlert(Alert.AlertType.WARNING, "提示", "请填写年级"); return; }
-                try {
-                    int gv = Integer.parseInt(gradeText);
-                    if (gv < 1990 || gv > 2050) { showAlert(Alert.AlertType.WARNING, "提示", "年级必须在1990-2050之间"); return; }
-                    req.setGrade(gv);
-                } catch (NumberFormatException ex) {
-                    showAlert(Alert.AlertType.WARNING, "提示", "年级必须为整数"); return;
-                }
+                // 年级（下拉框已限制范围）
+                if (gradeField.getValue() == null) { showAlert(Alert.AlertType.WARNING, "提示", "请选择年级"); return; }
+                req.setGrade(gradeField.getValue());
 
                 // 身份证号校验
                 String idCard = idCardField.getText().trim();
@@ -309,7 +300,6 @@ public class RegisterController {
                 req.setSClass(Integer.parseInt(classText));
                 req.setIdCard(idCard);
                 req.setBirthDate(birthPicker.getValue().toString());
-                req.setEnrollmentYear(enrollCombo.getValue());
                 req.setNativePlace(nativeText);
                 req.setPoliticalStatus(politicalCombo.getValue());
                 req.setAddress(addressText);
@@ -331,11 +321,7 @@ public class RegisterController {
                 showAlert(Alert.AlertType.INFORMATION, "注册成功", "注册成功，请登录");
                 break;
             } catch (ApiException ex) {
-                if (ex.getCode() == 409) {
-                    showAlert(Alert.AlertType.ERROR, "注册失败", "用户名已存在，请更换用户名");
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "注册失败", ex.getMessage());
-                }
+                showAlert(Alert.AlertType.ERROR, "注册失败", ex.getMessage());
             } catch (Exception ex) {
                 showAlert(Alert.AlertType.ERROR, "网络错误", "网络连接失败，请检查网络");
             }

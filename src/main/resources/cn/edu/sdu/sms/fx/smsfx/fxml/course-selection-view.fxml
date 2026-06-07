@@ -29,7 +29,7 @@
                 <TextField fx:id="idField" promptText="课程ID" prefWidth="100"/>
                 <TextField fx:id="nameField" promptText="课程名" prefWidth="200"/>
                 <Button fx:id="searchBtn" text="搜索" style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
-                <Button fx:id="resetBtn" text="重置" style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/>
+                <Button fx:id="resetBtn" text="重置搜索" style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/>
             </HBox>
 
             <VBox fx:id="courseContainer" spacing="8"/>
