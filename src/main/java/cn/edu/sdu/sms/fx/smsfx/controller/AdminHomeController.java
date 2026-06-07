@@ -1141,45 +1141,49 @@ public class AdminHomeController extends BaseController {
         d.getDialogPane().getButtonTypes().addAll(editBtn, saveBtn, ButtonType.CLOSE);
         javafx.scene.Node saveNode = d.getDialogPane().lookupButton(saveBtn);
         if(saveNode!=null) saveNode.setDisable(true);
-        d.getDialogPane().lookupButton(editBtn).addEventFilter(javafx.event.ActionEvent.ACTION, ev->{
+        javafx.scene.Node editNode = d.getDialogPane().lookupButton(editBtn);
+        if(editNode!=null) editNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev->{
             ev.consume(); edits.forEach(c->c.setDisable(false)); if(saveNode!=null) saveNode.setDisable(false);
         });
-        saveNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            ev.consume();
-            String idCard = idCardF.getText().trim();
-            if (!idCard.isEmpty()) { String idErr = validateIdCard(idCard); if (idErr != null) { showWarning(idErr); return; } }
-            String cp = contactPhoneF.getText().trim();
-            if (!cp.isEmpty()) { String pe = validatePhone(cp); if (pe != null) { showWarning("紧急联系人电话: "+pe); return; } }
-            String ct = classF.getText().trim();
-            if (!ct.isEmpty()) {
+        if (saveNode != null) {
+            saveNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+                ev.consume();
+                String idCard = idCardF.getText().trim();
+                if (!idCard.isEmpty()) { String idErr = validateIdCard(idCard); if (idErr != null) { showWarning(idErr); return; } }
+                String cp = contactPhoneF.getText().trim();
+                if (!cp.isEmpty()) { String pe = validatePhone(cp); if (pe != null) { showWarning("紧急联系人电话: "+pe); return; } }
+                String ct = classF.getText().trim();
+                if (!ct.isEmpty()) {
+                    try {
+                        int cv = Integer.parseInt(ct);
+                        if (cv <= 0) { showWarning("班级必须为大于0的正整数"); return; }
+                    } catch (NumberFormatException ex) { showWarning("班级必须为大于0的正整数"); return; }
+                }
                 try {
-                    int cv = Integer.parseInt(ct);
-                    if (cv <= 0) { showWarning("班级必须为大于0的正整数"); return; }
-                } catch (NumberFormatException ex) { showWarning("班级必须为大于0的正整数"); return; }
-            }
-            try {
-                Map<String, Object> data = new HashMap<>();
-                data.put("id", user.getId());
-                data.put("name", nameF.getText().trim());
-                data.put("phone", phoneF.getText().trim());
-                data.put("major", majorF.getText().trim());
-                data.put("gender", genderCb.getValue());
-                if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
-                if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
-                data.put("idCard", idCard);
-                data.put("nativePlace", nativeF.getText().trim());
-                data.put("politicalStatus", politicalCombo.getValue());
-                data.put("address", addressF.getText().trim());
-                data.put("contactName", contactNameF.getText().trim());
-                data.put("contactPhone", cp);
-                data.put("socialRelations", relationF.getText().trim());
-                if (gradeF.getValue() != null) data.put("grade", gradeF.getValue());
-                ApiClient.updateUser(data);
-                showInfo("保存成功");
-                if (onSave != null) onSave.run();
-                d.setResult(saveBtn);
-            } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
-        });
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", user.getId());
+                    data.put("name", nameF.getText().trim());
+                    data.put("phone", phoneF.getText().trim());
+                    data.put("major", majorF.getText().trim());
+                    data.put("gender", genderCb.getValue());
+                    if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
+                    if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
+                    data.put("idCard", idCard);
+                    data.put("nativePlace", nativeF.getText().trim());
+                    data.put("politicalStatus", politicalCombo.getValue());
+                    data.put("address", addressF.getText().trim());
+                    data.put("contactName", contactNameF.getText().trim());
+                    data.put("contactPhone", cp);
+                    data.put("socialRelations", relationF.getText().trim());
+                    if (gradeF.getValue() != null) data.put("grade", gradeF.getValue());
+                    ApiClient.updateUser(data);
+                    showInfo("保存成功");
+                    if (onSave != null) onSave.run();
+                    d.setResult(saveBtn);
+                } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
+            });
+        }
+        d.showAndWait();
     }
 
     /** 教师/管理员详情（查看+编辑） */
@@ -1619,7 +1623,19 @@ public class AdminHomeController extends BaseController {
         TableView<Map<String,Object>> table = new TableView<>();
         TableColumn<Map<String,Object>,String> c1 = new TableColumn<>("标题"); c1.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("title")));
         TableColumn<Map<String,Object>,String> c2 = new TableColumn<>("地点"); c2.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty((String)d.getValue().get("location")));
-        TableColumn<Map<String,Object>,String> c3 = new TableColumn<>("日期"); c3.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(d.getValue().get("date")!=null?d.getValue().get("date").toString():""));
+        TableColumn<Map<String,Object>,String> c3 = new TableColumn<>("日期"); c3.setCellValueFactory(d -> {
+            Object dt = d.getValue().get("date");
+            if (dt == null) return new javafx.beans.property.SimpleStringProperty("");
+            try {
+                String s = dt.toString().replace("T", " ");
+                if (s.length() >= 16) {
+                    java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(s.substring(0, 19), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    return new javafx.beans.property.SimpleStringProperty(
+                        ldt.getYear() + "年" + ldt.getMonthValue() + "月" + ldt.getDayOfMonth() + "日 " + s.substring(11, 16));
+                }
+            } catch (Exception ignored) {}
+            return new javafx.beans.property.SimpleStringProperty(dt.toString());
+        });
         TableColumn<Map<String,Object>,String> c4 = new TableColumn<>("报名/上限"); c4.setCellValueFactory(d -> { Object rc=d.getValue().get("registered_count"); Object mp=d.getValue().get("max_participants"); int max = mp!=null ? ((Number)mp).intValue() : 0; return new javafx.beans.property.SimpleStringProperty((rc!=null?rc:"0")+"/"+(max>0?String.valueOf(max):"∞")); });
         final int[] ap = {1}, at = {1};
         Runnable load = () -> refreshActivity(table,ap,at);
