@@ -41,7 +41,7 @@ public class AdminHomeController extends BaseController {
 
         addSectionLabel("学工管理");
         addMenuButton("🏆 荣誉管理", e -> showHonorManagement());
-        addMenuButton("💡 创新实践成果审批", e -> showPracticeManagement());
+        addMenuButton("💡 创新实践审批", e -> showPracticeManagement());
         addMenuButton("🏥 请假审批", e -> showLeaveManagement());
         addMenuButton("🎉 活动管理", e -> showActivityManagement());
 
@@ -238,12 +238,16 @@ public class AdminHomeController extends BaseController {
     private List<TableColumn<AdminUserVO, ?>> baseUserColumns() {
         TableColumn<AdminUserVO, String> schIdCol = new TableColumn<>("学号/工号");
         schIdCol.setCellValueFactory(new PropertyValueFactory<>("schId"));
+        schIdCol.setPrefWidth(100);
         TableColumn<AdminUserVO, String> usernameCol = new TableColumn<>("用户名");
         usernameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
+        usernameCol.setPrefWidth(90);
         TableColumn<AdminUserVO, String> nameCol = new TableColumn<>("姓名");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameCol.setPrefWidth(70);
         TableColumn<AdminUserVO, String> phoneCol = new TableColumn<>("手机号");
         phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
+        phoneCol.setPrefWidth(120);
         return List.of(schIdCol, usernameCol, nameCol, phoneCol);
     }
 
@@ -252,6 +256,7 @@ public class AdminHomeController extends BaseController {
                                                                  HBox searchBar,
                                                                  int[] pageRef, int[] totalRef) {
         TableColumn<AdminUserVO, Void> actionCol = new TableColumn<>("操作");
+        actionCol.setPrefWidth(210); actionCol.setMinWidth(180);
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button editBtn = new Button("编辑");
             private final Button deleteBtn = new Button("删除");
@@ -797,6 +802,10 @@ public class AdminHomeController extends BaseController {
         TextArea detailField = new TextArea();
         detailField.setPrefRowCount(3);
         TextField addressField = new TextField();
+        ComboBox<String> typeCombo = new ComboBox<>();
+        typeCombo.getItems().addAll("必修", "选修");
+        typeCombo.setValue("必修");
+        TextField creditsField = new TextField("3");
         ComboBox<Teacher> teacherCombo = new ComboBox<>();
         try { teacherCombo.getItems().addAll(ApiClient.getAllTeachers(null, null)); }
         catch (Exception ignored) {}
@@ -815,6 +824,8 @@ public class AdminHomeController extends BaseController {
             nameField.setText(full.getCourseName() != null ? full.getCourseName() : "");
             detailField.setText(full.getDetail() != null ? full.getDetail() : "");
             addressField.setText(full.getAddress() != null ? full.getAddress() : "");
+            if (full.getType() != null) typeCombo.setValue("REQUIRED".equals(full.getType()) ? "必修" : "选修");
+            creditsField.setText(full.getCredits() != null ? String.valueOf(full.getCredits().intValue()) : "3");
             if (full.getTeacherId() != null) {
                 for (Teacher t : teacherCombo.getItems()) {
                     if (full.getTeacherId().equals(t.getSchId())) { teacherCombo.setValue(t); break; }
@@ -827,6 +838,8 @@ public class AdminHomeController extends BaseController {
             grid.add(new Label("课程ID:"), 0, row); grid.add(courseIdField, 1, row++);
         }
         grid.add(new Label("课程名:"), 0, row); grid.add(nameField, 1, row++);
+        grid.add(new Label("课程类型:"), 0, row); grid.add(typeCombo, 1, row++);
+        grid.add(new Label("学分:"), 0, row); grid.add(creditsField, 1, row++);
         grid.add(new Label("课程详情:"), 0, row); grid.add(detailField, 1, row++);
         grid.add(new Label("授课地点:"), 0, row); grid.add(addressField, 1, row++);
         grid.add(new Label("任课教师:"), 0, row); grid.add(teacherCombo, 1, row++);
@@ -839,14 +852,19 @@ public class AdminHomeController extends BaseController {
             ev.consume(); // 阻止自动关闭
             String cname = nameField.getText() != null ? nameField.getText().trim() : "";
             String caddr = addressField.getText() != null ? addressField.getText().trim() : "";
+            String crText = creditsField.getText() != null ? creditsField.getText().trim() : "3";
             if (cname.isEmpty()) { showWarning("课程名不能为空"); return; }
             if (caddr.isEmpty()) { showWarning("授课地点不能为空"); return; }
+            if (teacherCombo.getValue() == null) { showWarning("请选择任课教师"); return; }
+            double credits; try { credits = Double.parseDouble(crText); if (credits <= 0) { showWarning("学分必须大于0"); return; } } catch (NumberFormatException ex) { showWarning("学分必须为数字"); return; }
             Map<String, Object> data = new HashMap<>();
             if (existing != null) data.put("id", fullCourseRef[0].getId());
             data.put("courseName", cname);
+            data.put("type", "必修".equals(typeCombo.getValue()) ? "REQUIRED" : "ELECTIVE");
+            data.put("credits", credits);
             data.put("detail", detailField.getText() != null ? detailField.getText().trim() : "");
             data.put("address", caddr);
-            if (teacherCombo.getValue() != null) data.put("teacherId", teacherCombo.getValue().getSchId());
+            data.put("teacherId", teacherCombo.getValue().getSchId());
             try {
                 if (existing != null) ApiClient.adminUpdateCourse(data);
                 else ApiClient.adminAddCourse(data);
@@ -870,9 +888,16 @@ public class AdminHomeController extends BaseController {
         Button publishBtn = new Button("发布公告");
         publishBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
 
-        HBox searchBar = createSearchBar("公告ID", "标题",
-                () -> refreshAnnouncementTable(), () -> refreshAnnouncementTable());
-        searchBar.getChildren().add(publishBtn);
+        HBox searchBar = new HBox(10);
+        searchBar.setPadding(new Insets(5, 0, 5, 0));
+        TextField annTitleField = new TextField();
+        annTitleField.setPromptText("标题");
+        annTitleField.setPrefWidth(200);
+        Button annSearchBtn = new Button("搜索");
+        annSearchBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+        Button annResetBtn = new Button("重置搜索");
+        annResetBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+        searchBar.getChildren().addAll(new Label(""), annTitleField, annSearchBtn, annResetBtn, publishBtn);
 
         TableView<Announcement> table = new TableView<>();
         TableColumn<Announcement, Integer> idCol = new TableColumn<>("ID");
@@ -925,10 +950,10 @@ public class AdminHomeController extends BaseController {
         var annTotalRef = new int[]{1};
         Runnable load = () -> {
             try {
-                String sId = getSearchId(searchBar);
-                String sTitle = getSearchName(searchBar);
+                String sTitle = annTitleField.getText().trim();
+                if (sTitle.isEmpty()) sTitle = null;
                 PageResult<Announcement> result = ApiClient.getAnnouncementList(
-                        annPageRef[0], 10, sId, sTitle);
+                        annPageRef[0], 10, null, sTitle);
                 if (result != null) {
                     table.setItems(FXCollections.observableArrayList(
                             result.getList() != null ? result.getList() : List.of()));
@@ -938,12 +963,8 @@ public class AdminHomeController extends BaseController {
             } catch (Exception e) { showError(e.getMessage()); }
         };
 
-        ((Button) searchBar.getChildren().get(2)).setOnAction(e -> { annPageRef[0] = 1; load.run(); });
-        ((Button) searchBar.getChildren().get(3)).setOnAction(e -> {
-            ((TextField)((TextField[])searchBar.getUserData())[0]).clear();
-            ((TextField)((TextField[])searchBar.getUserData())[1]).clear();
-            annPageRef[0] = 1; load.run();
-        });
+        annSearchBtn.setOnAction(e -> { annPageRef[0] = 1; load.run(); });
+        annResetBtn.setOnAction(e -> { annTitleField.clear(); annPageRef[0] = 1; load.run(); });
         load.run();
 
         HBox annPagination = createPagination(annPageRef[0], annTotalRef[0],

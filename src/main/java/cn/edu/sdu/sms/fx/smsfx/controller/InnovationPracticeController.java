@@ -102,14 +102,22 @@ public class InnovationPracticeController extends BaseController {
         String title = titleField.getText().trim();
         if (title.isEmpty()) { showWarning("请输入标题"); return; }
         LocalDate sd = startDate.getValue(), ed = endDate.getValue();
-        if (sd != null && ed != null && sd.isAfter(ed)) { showWarning("开始日期不能晚于结束日期"); return; }
+        if (sd == null) { showWarning("请选择开始日期"); return; }
+        if (ed == null) { showWarning("请选择结束日期"); return; }
+        if (sd.isAfter(ed)) { showWarning("开始日期不能晚于结束日期"); return; }
+        String org = orgField.getText() != null ? orgField.getText().trim() : "";
+        if (org.isEmpty()) { showWarning("请输入主办/组织单位"); return; }
+        String role = roleField.getText() != null ? roleField.getText().trim() : "";
+        if (role.isEmpty()) { showWarning("请输入担任角色"); return; }
         String desc = descField.getText() != null ? descField.getText().trim() : "";
+        if (desc.isEmpty()) { showWarning("请输入详细描述"); return; }
         String result = resultField.getText() != null ? resultField.getText().trim() : "";
+        if (result.isEmpty()) { showWarning("请输入成果/收获"); return; }
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("title", title); data.put("type", typeCombo.getValue());
-            data.put("startDate", sd != null ? sd.toString() : ""); data.put("endDate", ed != null ? ed.toString() : "");
-            data.put("organization", orgField.getText().trim()); data.put("role", roleField.getText().trim());
+            data.put("startDate", sd.toString()); data.put("endDate", ed.toString());
+            data.put("organization", org); data.put("role", role);
             data.put("description", desc); data.put("result", result);
             data.put("attachments", mapper.writeValueAsString(currentAttachments));
             ApiClient.submitPractice(data);
@@ -305,20 +313,28 @@ public class InnovationPracticeController extends BaseController {
             if (r == resubmitBtn) {
                 String title = titleF.getText().trim();
                 if (title.isEmpty()) { showWarning("请输入标题"); return; }
-                if (sdF.getValue() != null && edF.getValue() != null && sdF.getValue().isAfter(edF.getValue())) {
-                    showWarning("开始日期不能晚于结束日期"); return;
-                }
+                if (sdF.getValue() == null) { showWarning("请选择开始日期"); return; }
+                if (edF.getValue() == null) { showWarning("请选择结束日期"); return; }
+                if (sdF.getValue().isAfter(edF.getValue())) { showWarning("开始日期不能晚于结束日期"); return; }
+                String org = orgF.getText() != null ? orgF.getText().trim() : "";
+                if (org.isEmpty()) { showWarning("请输入主办/组织单位"); return; }
+                String role = roleF.getText() != null ? roleF.getText().trim() : "";
+                if (role.isEmpty()) { showWarning("请输入担任角色"); return; }
+                String desc = descF.getText() != null ? descF.getText().trim() : "";
+                if (desc.isEmpty()) { showWarning("请输入详细描述"); return; }
+                String resultText = resultF.getText() != null ? resultF.getText().trim() : "";
+                if (resultText.isEmpty()) { showWarning("请输入成果/收获"); return; }
                 try {
                     Map<String, Object> data = new HashMap<>();
                     data.put("id", ((Number)p.get("id")).longValue());
                     data.put("title", title);
                     data.put("type", typeCb.getValue());
-                    data.put("startDate", sdF.getValue() != null ? sdF.getValue().toString() : "");
-                    data.put("endDate", edF.getValue() != null ? edF.getValue().toString() : "");
-                    data.put("organization", orgF.getText().trim());
-                    data.put("role", roleF.getText().trim());
-                    data.put("description", descF.getText() != null ? descF.getText().trim() : "");
-                    data.put("result", resultF.getText() != null ? resultF.getText().trim() : "");
+                    data.put("startDate", sdF.getValue().toString());
+                    data.put("endDate", edF.getValue().toString());
+                    data.put("organization", org);
+                    data.put("role", role);
+                    data.put("description", desc);
+                    data.put("result", resultText);
                     data.put("attachments", mapper.writeValueAsString(editAttachments));
                     ApiClient.updatePractice(data);
                     showInfo("修改成功，已重新提交审批"); currentPage = 1; loadAllPractices();
