@@ -606,7 +606,7 @@ public class AdminHomeController extends BaseController {
                         data.put("major", majorField.getText().trim());
                         data.put("gender", genderCombo.getValue());
                         if (!classText.isEmpty())
-                            data.put("sClass", Integer.parseInt(classText));
+                            data.put("s_class", Integer.parseInt(classText));
                         if (gradeField.getValue() != null) data.put("grade", gradeField.getValue());
                     }
                     ApiClient.updateUser(data);
@@ -1141,13 +1141,11 @@ public class AdminHomeController extends BaseController {
         d.getDialogPane().getButtonTypes().addAll(editBtn, saveBtn, ButtonType.CLOSE);
         javafx.scene.Node saveNode = d.getDialogPane().lookupButton(saveBtn);
         if(saveNode!=null) saveNode.setDisable(true);
-        javafx.scene.Node editNode = d.getDialogPane().lookupButton(editBtn);
-        if(editNode!=null) editNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev->{
+        d.getDialogPane().lookupButton(editBtn).addEventFilter(javafx.event.ActionEvent.ACTION, ev->{
             ev.consume(); edits.forEach(c->c.setDisable(false)); if(saveNode!=null) saveNode.setDisable(false);
         });
-        if (saveNode != null) {
-            saveNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-                ev.consume();
+        d.showAndWait().ifPresent(result -> {
+            if (result == saveBtn) {
                 String idCard = idCardF.getText().trim();
                 if (!idCard.isEmpty()) { String idErr = validateIdCard(idCard); if (idErr != null) { showWarning(idErr); return; } }
                 String cp = contactPhoneF.getText().trim();
@@ -1166,7 +1164,7 @@ public class AdminHomeController extends BaseController {
                     data.put("phone", phoneF.getText().trim());
                     data.put("major", majorF.getText().trim());
                     data.put("gender", genderCb.getValue());
-                    if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
+                    if (!ct.isEmpty()) data.put("s_class", Integer.parseInt(ct));
                     if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
                     data.put("idCard", idCard);
                     data.put("nativePlace", nativeF.getText().trim());
@@ -1179,11 +1177,9 @@ public class AdminHomeController extends BaseController {
                     ApiClient.updateUser(data);
                     showInfo("保存成功");
                     if (onSave != null) onSave.run();
-                    d.setResult(saveBtn);
                 } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
-            });
-        }
-        d.showAndWait();
+            }
+        });
     }
 
     /** 教师/管理员详情（查看+编辑） */
