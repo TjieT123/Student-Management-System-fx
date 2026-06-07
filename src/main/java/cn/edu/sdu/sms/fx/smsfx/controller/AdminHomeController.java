@@ -30,6 +30,13 @@ public class AdminHomeController extends BaseController {
         homeBtn.setOnAction(e -> { showDashboard(); highlightButton(homeBtn); });
         sidebar.getChildren().clear();
 
+        // 重新添加首页按钮
+        homeBtn.setMaxWidth(Double.MAX_VALUE);
+        sidebar.getChildren().add(homeBtn);
+        allMenuButtons.add(homeBtn);
+        highlightButton(homeBtn);
+        sidebar.getChildren().add(new Separator());
+
         addSectionLabel("信息管理");
         addMenuButton("教师管理", e -> showTeacherManagement());
         addMenuButton("学生管理", e -> showStudentManagement());
