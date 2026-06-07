@@ -75,11 +75,11 @@ public class RegisterController {
 
         Label gradeLabel = new Label("年级:");
         ComboBox<Integer> gradeField = new ComboBox<>();
-        // 一次性添加101个年份 (2030~1930)
-        Integer[] years = new Integer[101];
-        for (int i = 0; i <= 100; i++) years[i] = 2030 - i;
+        int curYr = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        Integer[] years = new Integer[curYr - 1930 + 1];
+        for (int i = 0; i < years.length; i++) years[i] = curYr - i;
         gradeField.getItems().addAll(years);
-        gradeField.setValue(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR));
+        gradeField.setValue(curYr);
         gradeField.setVisibleRowCount(20);
 
         Label idCardLabel = new Label("身份证号:");
@@ -183,7 +183,8 @@ public class RegisterController {
 
         // ========== 注册按钮 ==========
         Button registerBtn = (Button) dialog.getDialogPane().lookupButton(registerButtonType);
-        registerBtn.setOnAction(e -> {
+        registerBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume(); // 阻止自动关闭，校验通过后手动 setResult
             boolean isStudent = "学生".equals(roleCombo.getValue());
 
             // 基础字段检查
@@ -263,7 +264,7 @@ public class RegisterController {
                 // 身份证号校验
                 String idCard = idCardField.getText().trim();
                 if (idCard.isEmpty()) { showAlert(Alert.AlertType.WARNING, "提示", "请填写身份证号"); return; }
-                String idErr = validateIdCard(idCard);
+                String idErr = BaseController.validateIdCard(idCard);
                 if (idErr != null) { showAlert(Alert.AlertType.WARNING, "提示", idErr); return; }
 
                 // 出生日期
@@ -326,26 +327,6 @@ public class RegisterController {
                 showAlert(Alert.AlertType.ERROR, "网络错误", "网络连接失败，请检查网络");
             }
         }
-    }
-
-    /** 18位身份证校验（与 BaseController 一致） */
-    private static String validateIdCard(String id) {
-        if (id == null || id.isEmpty()) return "身份证号不能为空";
-        if (id.length() != 18) return "身份证号必须为18位";
-        if (!id.substring(0, 17).matches("\\d{17}")) return "身份证号前17位必须为数字";
-        char last = id.charAt(17);
-        if (!Character.isDigit(last) && last != 'X' && last != 'x') return "身份证号第18位必须为数字或X";
-        int[] weights = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
-        char[] checkCodes = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
-        int sum = 0;
-        for (int i = 0; i < 17; i++) sum += (id.charAt(i) - '0') * weights[i];
-        if (Character.toUpperCase(last) != checkCodes[sum % 11]) return "身份证号校验位不正确";
-        // 校验出生日期
-        try {
-            String bd = id.substring(6, 10) + "-" + id.substring(10, 12) + "-" + id.substring(12, 14);
-            java.time.LocalDate.parse(bd);
-        } catch (Exception e) { return "身份证号中出生日期不合法"; }
-        return null;
     }
 
     private static void setRowVisible(GridPane grid, int row, boolean visible) {

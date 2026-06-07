@@ -265,9 +265,9 @@ public abstract class BaseController {
     }
 
     /**
-     * 校验身份证号：18位格式 + 校验位算法。返回 null 表示通过，否则返回错误信息。
+     * 校验身份证号：18位格式 + 校验位算法 + 出生日期有效性。返回 null 表示通过，否则返回错误信息。
      */
-    protected String validateIdCard(String id) {
+    public static String validateIdCard(String id) {
         if (id == null || id.isEmpty()) return null; // 允许为空
         if (!id.matches("\\d{17}[\\dXx]")) return "身份证号必须为18位，前17位为数字，最后一位为数字或X";
         // 校验位算法
@@ -276,6 +276,15 @@ public abstract class BaseController {
         int sum = 0;
         for (int i = 0; i < 17; i++) sum += (id.charAt(i) - '0') * weights[i];
         if (Character.toUpperCase(id.charAt(17)) != chk[sum % 11]) return "身份证号校验位不正确";
+        // 校验出生日期：不能超过今天，月份1-12，日期有效
+        try {
+            int year = Integer.parseInt(id.substring(6, 10));
+            int month = Integer.parseInt(id.substring(10, 12));
+            int day = Integer.parseInt(id.substring(12, 14));
+            if (month < 1 || month > 12) return "身份证号中月份不合法";
+            java.time.LocalDate birthDate = java.time.LocalDate.of(year, month, day); // 自动校验日期有效性
+            if (birthDate.isAfter(java.time.LocalDate.now())) return "身份证号中出生日期不能超过当前日期";
+        } catch (Exception e) { return "身份证号中出生日期不合法"; }
         return null;
     }
 

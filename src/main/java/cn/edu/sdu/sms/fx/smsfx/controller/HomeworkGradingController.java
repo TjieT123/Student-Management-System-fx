@@ -85,10 +85,12 @@ public class HomeworkGradingController extends BaseController {
 
     private void handleAiGrade() {
         if (homeworkId == null) { showError("无法获取作业信息"); return; }
-        if (currentSubmission == null || currentSubmission.getContent() == null || currentSubmission.getContent().trim().isEmpty()) {
-            showWarning("学生尚未提交作业内容，无法进行AI判卷"); return;
+        boolean hasContent = currentSubmission != null && currentSubmission.getContent() != null && !currentSubmission.getContent().trim().isEmpty();
+        boolean hasAttachments = currentSubmission != null && currentSubmission.getAttachments() != null && !currentSubmission.getAttachments().isEmpty();
+        if (!hasContent && !hasAttachments) {
+            showWarning("学生尚未提交作业内容和附件，无法进行AI判卷"); return;
         }
-        if (!showConfirm("AI判卷", "AI将读取学生提交内容，以及作业附件和学生提交附件中的文本、PDF、Word、Excel文件。\n其他类型的附件（如图片）将被跳过。AI结果仅供参考。\n\n确定继续？")) return;
+        if (!showConfirm("AI判卷", "AI将读取学生提交内容、作业附件以及学生提交附件中的文本、PDF、Word、Excel文件。\n其他类型的附件（如图片）将被跳过。AI结果仅供参考。\n\n确定继续？")) return;
         aiGradeBtn.setDisable(true); aiGradeBtn.setText("AI判卷中...");
         aiStatusLabel.setText("正在调用AI，预计需要5-15秒..."); aiStatusLabel.setVisible(true); aiStatusLabel.setManaged(true);
         final int hwId = homeworkId, sId = submitId;

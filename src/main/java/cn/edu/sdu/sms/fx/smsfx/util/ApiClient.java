@@ -1458,33 +1458,6 @@ public class ApiClient {
         return true;
     }
 
-    // -- 通知 (Feature 13) --
-    public static PageResult<Map<String, Object>> getNotifications(int page, int pageSize) {
-        Map<String, Object> params = new HashMap<>(); params.put("page", page); params.put("pageSize", pageSize);
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/notification/list"), params, SessionManager.getToken());
-        if (response == null) throw new ApiException(500, "网络连接失败");
-        JsonNode dataNode = parseResponse(response.getBody());
-        return convertData(dataNode, new TypeReference<PageResult<Map<String, Object>>>() {});
-    }
-    public static int getUnreadNotificationCount() {
-        HttpResponse<String> response = UnirestRequest.getRaw(url("/api/notification/unread-count"), new HashMap<>(), SessionManager.getToken());
-        if (response == null) return 0;
-        try {
-            JsonNode dataNode = parseResponse(response.getBody());
-            return dataNode != null && dataNode.has("count") ? dataNode.get("count").asInt() : 0;
-        } catch (Exception e) { return 0; }
-    }
-    public static boolean markNotificationRead(Integer id) {
-        HttpResponse<String> response = UnirestRequest.postRaw(url("/api/notification/read/" + id), SessionManager.getToken());
-        if (response == null) return false;
-        try { parseResponse(response.getBody()); return true; } catch (Exception e) { return false; }
-    }
-    public static boolean markAllNotificationsRead() {
-        HttpResponse<String> response = UnirestRequest.postRaw(url("/api/notification/read-all"), SessionManager.getToken());
-        if (response == null) return false;
-        try { parseResponse(response.getBody()); return true; } catch (Exception e) { return false; }
-    }
-
     // ==================== 通用错误处理 ====================
 
     /**

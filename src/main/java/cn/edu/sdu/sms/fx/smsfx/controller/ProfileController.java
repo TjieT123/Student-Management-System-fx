@@ -135,8 +135,10 @@ public class ProfileController extends BaseController {
             contactPhoneField = new TextField(sp.getContactPhone() != null ? sp.getContactPhone() : ""); contactPhoneField.setVisible(false); contactPhoneField.setManaged(false);
             relationField = new TextField(sp.getSocialRelations() != null ? sp.getSocialRelations() : ""); relationField.setVisible(false); relationField.setManaged(false);
             gradeField = new ComboBox<>();
-            for (int y = 2030; y >= 1930; y--) gradeField.getItems().add(y);
+            int curYr = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+            for (int y = curYr; y >= 1930; y--) gradeField.getItems().add(y);
             if (sp.getGrade() != null) gradeField.setValue(sp.getGrade());
+            else gradeField.setValue(curYr);
             gradeField.setVisibleRowCount(15);
             gradeField.setVisible(false); gradeField.setManaged(false);
 

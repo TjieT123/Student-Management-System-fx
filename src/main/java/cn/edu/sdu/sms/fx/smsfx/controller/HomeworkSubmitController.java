@@ -319,6 +319,10 @@ public class HomeworkSubmitController extends BaseController {
 
     private void handleSubmit() {
         String content = contentArea.getText() != null ? contentArea.getText().trim() : "";
+        if (content.isEmpty() && pendingAttachments.isEmpty()) {
+            showWarning("提交内容和附件不能同时为空，请至少填写一项");
+            return;
+        }
         try {
             SubmitHomeworkRequest req = new SubmitHomeworkRequest(homeworkId, content);
             ApiClient.submitHomework(req);

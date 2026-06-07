@@ -55,7 +55,7 @@ public class ScoreEntryController extends BaseController {
             allStudents = students;
             totalPages = Math.max(1, (int) Math.ceil((double) allStudents.size() / pageSize));
             currentPage = 1;
-            statusLabel.setText("共 " + allStudents.size() + " 名学生（已有 " + existingScores.size() + " 人录入成绩）");
+            statusLabel.setText("共 " + allStudents.size() + " 名学生");
             renderTable();
         } catch (Exception e) { statusLabel.setText("加载学生列表失败: " + e.getMessage()); }
     }
@@ -79,28 +79,31 @@ public class ScoreEntryController extends BaseController {
         scoreCol.setCellFactory(col -> new javafx.scene.control.TableCell<Student, Double>() {
             private final TextField textField = new TextField();
             {
-                textField.setOnAction(e -> commitEditFromField());
-                textField.focusedProperty().addListener((obs, old, focused) -> { if (!focused) commitEditFromField(); });
+                textField.setOnAction(e -> {
+                    if (saveCurrentEdit()) commitEdit(existingScores.get(getTableRow().getItem() != null ? getTableRow().getItem().getSid() : null));
+                });
             }
-            private void commitEditFromField() {
+            /** 保存当前输入框的值到 existingScores，返回是否有效 */
+            private boolean saveCurrentEdit() {
+                Student st = getTableView() != null && getIndex() >= 0 && getIndex() < getTableView().getItems().size()
+                        ? getTableView().getItems().get(getIndex()) : null;
+                if (st == null) return false;
                 String s = textField.getText().trim();
-                Student st = getTableView().getItems().get(getIndex());
-                if (s.isEmpty()) { existingScores.remove(st.getSid()); commitEdit(0.0); return; }
+                if (s.isEmpty()) { existingScores.remove(st.getSid()); return true; }
                 try {
                     double v = Double.parseDouble(s);
-                    if (v < 0 || v > 100) { showWarning("成绩必须在0-100之间"); textField.setText(""); return; }
+                    if (v < 0 || v > 100) { showWarning("成绩必须在0-100之间"); textField.setText(""); return false; }
                     existingScores.put(st.getSid(), v);
-                    commitEdit(v); // 提交编辑并更新 item，避免新旧值重叠显示
-                } catch (NumberFormatException ex) {
-                    showWarning("请输入0-100之间的数字");
-                    textField.setText("");
-                }
+                    return true;
+                } catch (NumberFormatException ex) { showWarning("请输入0-100之间的数字"); textField.setText(""); return false; }
             }
             @Override protected void updateItem(Double val, boolean empty) {
                 super.updateItem(val, empty);
                 if (empty || getTableView() == null) { setGraphic(null); setText(null); return; }
-                if (isEditing()) { textField.setText(val != null ? String.valueOf(val.intValue()) : ""); setGraphic(textField); setText(null); }
-                else { setGraphic(null); setText(val != null ? String.valueOf(val.intValue()) : ""); }
+                Student st = getTableView().getItems().get(getIndex());
+                Double cur = st != null ? existingScores.get(st.getSid()) : null;
+                if (isEditing()) { setGraphic(textField); setText(null); }
+                else { setGraphic(null); setText(cur != null ? String.valueOf(cur.intValue()) : (val != null ? String.valueOf(val.intValue()) : "")); }
             }
             @Override public void startEdit() {
                 super.startEdit();
@@ -109,7 +112,15 @@ public class ScoreEntryController extends BaseController {
                 textField.setText(cur != null ? String.valueOf(cur.intValue()) : "");
                 setGraphic(textField); setText(null);
             }
-            @Override public void cancelEdit() { super.cancelEdit(); setGraphic(null); setText(getItem() != null ? String.valueOf(getItem().intValue()) : ""); }
+            @Override public void cancelEdit() {
+                saveCurrentEdit();
+                super.cancelEdit();
+                setGraphic(null);
+                Student st = getTableView() != null && getIndex() >= 0 && getIndex() < getTableView().getItems().size()
+                        ? getTableView().getItems().get(getIndex()) : null;
+                Double cur = st != null ? existingScores.get(st.getSid()) : getItem();
+                setText(cur != null ? String.valueOf(cur.intValue()) : "");
+            }
         });
         scoreCol.setPrefWidth(100);
         table.getColumns().addAll(sidCol, nameCol, majorCol, classCol, scoreCol);

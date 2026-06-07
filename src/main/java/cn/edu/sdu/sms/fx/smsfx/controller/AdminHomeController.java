@@ -511,9 +511,9 @@ public class AdminHomeController extends BaseController {
         genderCombo.getItems().addAll("男", "女");
         TextField classField = new TextField();
         ComboBox<Integer> gradeField = new ComboBox<>();
-        for (int y = 2030; y >= 1930; y--) gradeField.getItems().add(y);
         int curYr = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        gradeField.setValue(curYr >= 1930 && curYr <= 2030 ? curYr : 2030);
+        for (int y = curYr; y >= 1930; y--) gradeField.getItems().add(y);
+        gradeField.setValue(curYr);
         gradeField.setVisibleRowCount(15);
         int majorRow = row;
         grid.add(new Label("专业:"), 0, row); grid.add(majorField, 1, row++);
@@ -755,7 +755,7 @@ public class AdminHomeController extends BaseController {
         TextField nameF = new TextField(cRef.getCourseName()!=null?cRef.getCourseName():"");
         ComboBox<String> typeCb = new ComboBox<>(); typeCb.getItems().addAll("必修","选修");
         typeCb.setValue("REQUIRED".equals(cRef.getType())?"必修":"ELECTIVE".equals(cRef.getType())?"选修":"必修");
-        TextField credF = new TextField(cRef.getCredits()!=null?String.valueOf(cRef.getCredits().intValue()):"3");
+        TextField credF = new TextField(cRef.getCredits()!=null?String.format("%.1f", cRef.getCredits()):"3.0");
         TextArea detailF = new TextArea(cRef.getDetail()!=null?cRef.getDetail():""); detailF.setPrefRowCount(4);
         TextField addrF = new TextField(cRef.getAddress()!=null?cRef.getAddress():"");
         ComboBox<Teacher> teacherCb = new ComboBox<>();
@@ -825,7 +825,7 @@ public class AdminHomeController extends BaseController {
             detailField.setText(full.getDetail() != null ? full.getDetail() : "");
             addressField.setText(full.getAddress() != null ? full.getAddress() : "");
             if (full.getType() != null) typeCombo.setValue("REQUIRED".equals(full.getType()) ? "必修" : "选修");
-            creditsField.setText(full.getCredits() != null ? String.valueOf(full.getCredits().intValue()) : "3");
+            creditsField.setText(full.getCredits() != null ? String.format("%.1f", full.getCredits()) : "3.0");
             if (full.getTeacherId() != null) {
                 for (Teacher t : teacherCombo.getItems()) {
                     if (full.getTeacherId().equals(t.getSchId())) { teacherCombo.setValue(t); break; }
@@ -1103,8 +1103,10 @@ public class AdminHomeController extends BaseController {
         TextField contactPhoneF = new TextField(user.getContactPhone() != null ? user.getContactPhone() : "");
         TextField relationF = new TextField(user.getSocialRelations() != null ? user.getSocialRelations() : "");
         ComboBox<Integer> gradeF = new ComboBox<>();
-        for (int y = 2030; y >= 1930; y--) gradeF.getItems().add(y);
+        int cY = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        for (int y = cY; y >= 1930; y--) gradeF.getItems().add(y);
         if (user.getGrade() != null) gradeF.setValue(user.getGrade());
+        else gradeF.setValue(cY);
         gradeF.setVisibleRowCount(15);
 
         g.addRow(r++, new Label("姓名:"), nameF);
@@ -1135,41 +1137,41 @@ public class AdminHomeController extends BaseController {
         d.getDialogPane().lookupButton(editBtn).addEventFilter(javafx.event.ActionEvent.ACTION, ev->{
             ev.consume(); edits.forEach(c->c.setDisable(false)); if(saveNode!=null) saveNode.setDisable(false);
         });
-        d.showAndWait().ifPresent(result -> {
-            if (result == saveBtn) {
-                String idCard = idCardF.getText().trim();
-                if (!idCard.isEmpty()) { String idErr = validateIdCard(idCard); if (idErr != null) { showWarning(idErr); return; } }
-                String cp = contactPhoneF.getText().trim();
-                if (!cp.isEmpty()) { String pe = validatePhone(cp); if (pe != null) { showWarning("紧急联系人电话: "+pe); return; } }
+        saveNode.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ev.consume();
+            String idCard = idCardF.getText().trim();
+            if (!idCard.isEmpty()) { String idErr = validateIdCard(idCard); if (idErr != null) { showWarning(idErr); return; } }
+            String cp = contactPhoneF.getText().trim();
+            if (!cp.isEmpty()) { String pe = validatePhone(cp); if (pe != null) { showWarning("紧急联系人电话: "+pe); return; } }
+            String ct = classF.getText().trim();
+            if (!ct.isEmpty()) {
                 try {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("id", user.getId());
-                    data.put("name", nameF.getText().trim());
-                    data.put("phone", phoneF.getText().trim());
-                    data.put("major", majorF.getText().trim());
-                    data.put("gender", genderCb.getValue());
-                    String ct = classF.getText().trim();
-                    if (!ct.isEmpty()) {
-                        try {
-                            int cv = Integer.parseInt(ct);
-                            if (cv <= 0) { showWarning("班级必须为大于0的正整数"); return; }
-                            data.put("sClass", cv);
-                        } catch (NumberFormatException ex) { showWarning("班级必须为大于0的正整数"); return; }
-                    }
-                    if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
-                    data.put("idCard", idCard);
-                    data.put("nativePlace", nativeF.getText().trim());
-                    data.put("politicalStatus", politicalCombo.getValue());
-                    data.put("address", addressF.getText().trim());
-                    data.put("contactName", contactNameF.getText().trim());
-                    data.put("contactPhone", cp);
-                    data.put("socialRelations", relationF.getText().trim());
-                    if (gradeF.getValue() != null) data.put("grade", gradeF.getValue());
-                    ApiClient.updateUser(data);
-                    showInfo("保存成功");
-                    if (onSave != null) onSave.run();
-                } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
+                    int cv = Integer.parseInt(ct);
+                    if (cv <= 0) { showWarning("班级必须为大于0的正整数"); return; }
+                } catch (NumberFormatException ex) { showWarning("班级必须为大于0的正整数"); return; }
             }
+            try {
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", user.getId());
+                data.put("name", nameF.getText().trim());
+                data.put("phone", phoneF.getText().trim());
+                data.put("major", majorF.getText().trim());
+                data.put("gender", genderCb.getValue());
+                if (!ct.isEmpty()) data.put("sClass", Integer.parseInt(ct));
+                if (birthPicker.getValue() != null) data.put("birthDate", birthPicker.getValue().toString());
+                data.put("idCard", idCard);
+                data.put("nativePlace", nativeF.getText().trim());
+                data.put("politicalStatus", politicalCombo.getValue());
+                data.put("address", addressF.getText().trim());
+                data.put("contactName", contactNameF.getText().trim());
+                data.put("contactPhone", cp);
+                data.put("socialRelations", relationF.getText().trim());
+                if (gradeF.getValue() != null) data.put("grade", gradeF.getValue());
+                ApiClient.updateUser(data);
+                showInfo("保存成功");
+                if (onSave != null) onSave.run();
+                d.setResult(saveBtn);
+            } catch (Exception e) { showError("保存失败: " + e.getMessage()); }
         });
     }
 
