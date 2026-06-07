@@ -41,7 +41,7 @@ public class ActivityController extends BaseController {
                     card.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 5; -fx-padding: 12; -fx-cursor: hand;");
                     VBox info = new VBox(4);
                     info.getChildren().add(new Label((String) a.get("title")) {{ setStyle("-fx-font-weight: bold; -fx-font-size: 14;"); }});
-                    info.getChildren().add(new Label("地点: " + (a.get("location")!=null?a.get("location"):"") + " | 日期: " + (a.get("date")!=null?a.get("date").toString():"")));
+                    info.getChildren().add(new Label("地点: " + (a.get("location")!=null?a.get("location"):"") + " | 日期: " + fmtDate(a.get("date"))));
                     Object rc = a.get("registered_count"); Object mp = a.get("max_participants");
                     int max = mp!=null ? ((Number)mp).intValue() : 0;
                     Boolean registered = (Boolean) a.get("isRegistered");
@@ -65,7 +65,7 @@ public class ActivityController extends BaseController {
         c.getChildren().add(new Label("📌 " + a.get("title")) {{ setStyle("-fx-font-weight: bold; -fx-font-size: 16;"); }});
         c.getChildren().add(new Label("内容: " + (a.get("content")!=null?a.get("content"):"暂无")));
         c.getChildren().add(new Label("地点: " + (a.get("location")!=null?a.get("location"):"")));
-        c.getChildren().add(new Label("日期: " + (a.get("date")!=null?a.get("date").toString():"")));
+        c.getChildren().add(new Label("日期: " + fmtDate(a.get("date"))));
         Object rc = a.get("registered_count"); Object mp = a.get("max_participants");
         int max = mp!=null ? ((Number)mp).intValue() : 0; int reg = rc!=null ? ((Number)rc).intValue() : 0;
         c.getChildren().add(new Label("报名人数: " + reg + "/" + (max>0?String.valueOf(max):"不限")));
@@ -85,5 +85,17 @@ public class ActivityController extends BaseController {
         d.getDialogPane().setContent(c);
         d.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         d.showAndWait();
+    }
+
+    private String fmtDate(Object dt) {
+        if (dt == null) return "";
+        try {
+            String s = dt.toString().replace("T", " ");
+            if (s.length() >= 16) {
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(s.substring(0, 19), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                return ldt.getYear() + "年" + ldt.getMonthValue() + "月" + ldt.getDayOfMonth() + "日 " + s.substring(11, 16);
+            }
+        } catch (Exception ignored) {}
+        return dt.toString();
     }
 }
