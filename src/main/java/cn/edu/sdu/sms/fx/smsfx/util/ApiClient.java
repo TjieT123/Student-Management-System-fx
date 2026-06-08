@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class ApiClient {
 
-    private static final String BASE_URL = "http://localhost:1010";
+    private static final String BASE_URL = "http://202.194.7.29:22223";
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private ApiClient() {}
