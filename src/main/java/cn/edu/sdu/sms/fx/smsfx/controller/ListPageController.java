@@ -201,8 +201,7 @@ public class ListPageController extends BaseController {
             DatePicker dp=new DatePicker(); dp.setEditable(false); ComboBox<String> hh=new ComboBox<>(), mm=new ComboBox<>();
             for(int i=0;i<24;i++)hh.getItems().add(String.format("%02d",i));
             mm.getItems().addAll("00","30","59");
-            if(hw.getDeadline()!=null){try{String dl=hw.getDeadline().replace("T"," ");String[] parts=dl.split(" ");dp.setValue(java.time.LocalDate.parse(parts[0]));String[] tm=parts[1].split(":");hh.setValue(tm[0]);mm.setValue(tm[1]);}catch(Exception ignored){}}
-            hh.setValue("23");mm.setValue("59");
+            if(hw.getDeadline()!=null){try{String dl=hw.getDeadline().replace("T"," ");String[] parts=dl.split(" ");dp.setValue(java.time.LocalDate.parse(parts[0]));String[] tm=parts[1].split(":");hh.setValue(tm[0]);mm.setValue(tm[1]);}catch(Exception ignored){hh.setValue("23");mm.setValue("59");}}
 
             // Attachment management
             VBox attBox = new VBox(5);

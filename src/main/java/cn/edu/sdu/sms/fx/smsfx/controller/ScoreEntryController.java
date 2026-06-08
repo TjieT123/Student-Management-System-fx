@@ -103,13 +103,13 @@ public class ScoreEntryController extends BaseController {
                 Student st = getTableView().getItems().get(getIndex());
                 Double cur = st != null ? existingScores.get(st.getSid()) : null;
                 if (isEditing()) { setGraphic(textField); setText(null); }
-                else { setGraphic(null); setText(cur != null ? String.valueOf(cur.intValue()) : (val != null ? String.valueOf(val.intValue()) : "")); }
+                else { setGraphic(null); setText(cur != null ? String.valueOf(cur) : (val != null ? String.valueOf(val) : "")); }
             }
             @Override public void startEdit() {
                 super.startEdit();
                 Student st = getTableView().getItems().get(getIndex());
                 Double cur = existingScores.get(st.getSid());
-                textField.setText(cur != null ? String.valueOf(cur.intValue()) : "");
+                textField.setText(cur != null ? String.valueOf(cur) : "");
                 setGraphic(textField); setText(null);
             }
             @Override public void cancelEdit() {
@@ -119,7 +119,7 @@ public class ScoreEntryController extends BaseController {
                 Student st = getTableView() != null && getIndex() >= 0 && getIndex() < getTableView().getItems().size()
                         ? getTableView().getItems().get(getIndex()) : null;
                 Double cur = st != null ? existingScores.get(st.getSid()) : getItem();
-                setText(cur != null ? String.valueOf(cur.intValue()) : "");
+                setText(cur != null ? String.valueOf(cur) : "");
             }
         });
         scoreCol.setPrefWidth(100);
